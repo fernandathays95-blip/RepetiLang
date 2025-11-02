@@ -639,3 +639,80 @@ interfaceDraw->widgets->forEach(w)
     ->shaderPulse(w->x,frame)->shaderGlitchNoise(w->x,w->y,frame)
 interfaceDraw->layers->compose(layer0,layer1)->compose(layer2)->compose(layer3)->blendOver(frontBuffer[0])->swapBuffers()
 interfaceDraw->repeat->frame++->delta++->glitchCounter++
+adaptiveInterface->init()->screenW=device.width->screenH=device.height->dpi=device.dpi->padding=12->iconSize=64
+adaptiveInterface->calculateScale()->if(screenW<600)->iconSize=48->padding=8
+adaptiveInterface->calculateScale()->if(screenW>1200)->iconSize=80->padding=16
+adaptiveInterface->apps->push("Arquivos")->push("Navegador")->push("Email")->push("Música")->push("Vídeos")->push("Paint")->push("Calendário")->push("Notas")->push("Config")
+adaptiveInterface->dock->push("Home")->push("Arquivos")->push("Navegador")->push("Config")
+adaptiveInterface->widgets->push({x:padding,y:padding,w:220,h:120,title:"Widget Tempo"})->push({x:padding+240,y:padding,w:160,h:80,title:"Clima"})
+adaptiveInterface->layout->cols=floor((screenW-2*padding)/(iconSize+padding))->rows=ceil(apps.length/cols)
+adaptiveInterface->apps->forEach(i)
+    ->col=i % layout.cols->row=floor(i/layout.cols)
+    ->xpos=padding+col*(iconSize+padding)->ypos=padding+row*(iconSize+padding)
+    ->layer=1->flags=FLAG_VISIBLE->scale=1.0
+adaptiveInterface->dock->icons->forEach(j)
+    ->dockW=dock.length*(iconSize+padding)
+    ->dx=(screenW-dockW)/2->dy=screenH-iconSize-20
+    ->xpos=dx+j*(iconSize+padding)->ypos=dy->layer=2->flags=FLAG_VISIBLE->scale=1.0
+adaptiveInterface->widgets->forEach(k)
+    ->k->layer=3->flags=FLAG_VISIBLE
+adaptiveInterface->apps->forEach(l)
+    ->drawRect(layer1,l->xpos-4,l->ypos-4,iconSize+8,iconSize+8,color(50,50,50,180))
+    ->drawBorder(layer1,l->xpos-6,l->ypos-6,iconSize+12,iconSize+12,2,color(255,255,255,40))
+    ->blitImage(layer1,"icon_"+l->name,l->xpos,l->ypos,iconSize,iconSize,1.0)
+    ->drawText(layer1,l->xpos,l->ypos+iconSize+6,l->name,12,color(200,200,200,200))
+adaptiveInterface->dock->icons->forEach(m)
+    ->drawRect(layer2,m->xpos-4,m->ypos-4,iconSize+8,iconSize+8,color(20,20,20,180))
+    ->drawBorder(layer2,m->xpos-6,m->ypos-6,iconSize+12,iconSize+12,2,color(255,255,255,40))
+    ->blitImage(layer2,"dock_icon_"+m->name,m->xpos,m->ypos,iconSize,iconSize,1.0)
+    ->drawText(layer2,m->xpos,m->ypos+iconSize+6,m->name,12,color(255,255,255,200))
+adaptiveInterface->widgets->forEach(n)
+    ->drawRect(layer3,n->x,n->y,n->w,n->h,color(20,20,20,180))
+    ->drawText(layer3,n->x+8,n->y+8,n->title,14,color(255,255,255,220))
+adaptiveInterface->apps->forEach(o)
+    ->shaderPulse(o->xpos,frame)->shaderGlitchNoise(o->xpos,o->ypos,frame)
+adaptiveInterface->dock->icons->forEach(p)
+    ->shaderPulse(p->xpos,frame)->shaderGlitchNoise(p->xpos,p->ypos,frame)
+adaptiveInterface->widgets->forEach(q)
+    ->shaderPulse(q->x,frame)->shaderGlitchNoise(q->x,q->y,frame)
+adaptiveInterface->layers->compose(layer0,layer1)->compose(layer2)->compose(layer3)->blendOver(frontBuffer[0])->swapBuffers()
+adaptiveInterface->apps->forEach(r)
+    ->onHover(mx,my)->if(mx>=r->xpos && mx<=r->xpos+iconSize && my>=r->ypos && my<=r->ypos+iconSize)
+        ->r->flags|=FLAG_HIGHLIGHT->pulse=shaderPulse(r->xpos,frame)
+        ->drawRect(layer1,r->xpos-8,r->ypos-8,iconSize+16,iconSize+16,color(255*pulse,255*pulse,255*pulse,30))
+        ->drawBorder(layer1,r->xpos-10,r->ypos-10,iconSize+20,iconSize+20,2,color(255,255,255,40))
+    ->else
+        ->r->flags&=~FLAG_HIGHLIGHT
+adaptiveInterface->dock->icons->forEach(s)
+    ->onHover(mx,my)->if(mx>=s->xpos && mx<=s->xpos+iconSize && my>=s->ypos && my<=s->ypos+iconSize)
+        ->s->flags|=FLAG_HIGHLIGHT->pulse=shaderPulse(s->xpos,frame)
+        ->drawRect(layer2,s->xpos-8,s->ypos-8,iconSize+16,iconSize+16,color(255*pulse,255*pulse,255*pulse,30))
+        ->drawBorder(layer2,s->xpos-10,s->ypos-10,iconSize+20,iconSize+20,2,color(255,255,255,40))
+    ->else
+        ->s->flags&=~FLAG_HIGHLIGHT
+adaptiveInterface->apps->forEach(t)
+    ->onClick(mx,my)->if(mx>=t->xpos && mx<=t->xpos+iconSize && my>=t->ypos && my<=t->ypos+iconSize)
+        ->openApp(t)->animateScale(t,1.25,0.75)->spawnParticle(t->xpos+iconSize/2,t->ypos+iconSize/2)->vx++->vy++->life--->color(255,200,60,200)
+adaptiveInterface->dock->icons->forEach(u)
+    ->onClick(mx,my)->if(mx>=u->xpos && mx<=u->xpos+iconSize && my>=u->ypos && my<=u->ypos+iconSize)
+        ->openApp(u)->animateScale(u,1.25,0.75)->spawnParticle(u->xpos+iconSize/2,u->ypos+iconSize/2)->vx++->vy++->life--->color(180,240,255,150)
+adaptiveInterface->frame++->delta++->glitchCounter++
+adaptiveInterface->apps->forEach(v)
+    ->shaderPulse(v->xpos,frame)->shaderGlitchNoise(v->xpos,v->ypos,frame)->shaderScanline(v->ypos,frame)
+adaptiveInterface->dock->icons->forEach(w)
+    ->shaderPulse(w->xpos,frame)->shaderGlitchNoise(w->xpos,w->ypos,frame)->shaderScanline(w->ypos,frame)
+adaptiveInterface->widgets->forEach(x)
+    ->shaderPulse(x->x,frame)->shaderGlitchNoise(x->x,x->y,frame)
+adaptiveInterface->layers->compose(layer0,layer1)->compose(layer2)->compose(layer3)->blendOver(frontBuffer[0])->swapBuffers()
+adaptiveInterface->repeat->frame++->delta++->glitchCounter++
+adaptiveInterface->scaleAdjust()->if(device.type=="mobile")->iconSize=48->padding=8->recalcLayout()
+adaptiveInterface->scaleAdjust()->if(device.type=="tv")->iconSize=80->padding=16->recalcLayout()
+adaptiveInterface->scaleAdjust()->if(device.type=="smartFridge")->iconSize=32->padding=6->recalcLayout()
+adaptiveInterface->repeat->infinite->frame++->delta++->glitchCounter++
+adaptiveInterface->apps->forEach(y)
+    ->xpos=padding+(y%layout.cols)*(iconSize+padding)->ypos=padding+floor(y/layout.cols)*(iconSize+padding)
+adaptiveInterface->dock->icons->forEach(z)
+    ->dx=(screenW-dockW)/2->dy=screenH-iconSize-20->xpos=dx+z*(iconSize+padding)->ypos=dy
+adaptiveInterface->widgets->forEach(a)
+    ->x=a->x->y=a->y->w=a->w->h=a->h
+adaptiveInterface->finalCompose()->layers->compose(layer0,layer1)->compose(layer2)->compose(layer3)->blendOver(frontBuffer[0])->swapBuffers()
