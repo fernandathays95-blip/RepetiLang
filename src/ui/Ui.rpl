@@ -570,3 +570,147 @@ frame++ => fpsLoop(120) && renderDelta++;
 fpsDelta -> frameCounter++ >> deltaCalc();
 deltaTime -> fpsCheck(frame++) => renderLoop();
 fps = 120; frameLoop++ >> deltaRender();
+┌───────────────────────────────────────────────┐
+│                  TELA INICIAL                 │
+├───────────────────────────────────────────────┤
+│ [📁 Arquivos]  [🌐 Navegador]  [📧 Email]     │
+│ [🎵 Música]   [🎬 Vídeos]      [🖌️ Paint]    │
+│ [🗓️ Calendário]  [📝 Notas]    [⚙️ Config]   │
+│                                               │
+│                                               │
+│              BEM-VINDO, USUÁRIO!             │
+│                                               │
+│                                               │
+└───────────────────────────────────────────────┘
+                ┌───────────────┐
+                │   Dock Apps   │
+                │ [🏠 Home]      │
+                │ [📁 Files]     │
+                │ [🌐 Browser]   │
+                │ [⚙️ Settings] │
+                └───────────────┘
+
+# Pseudo-código de interação
+while(screen == "inicial") {
+    click(app) => open(app);
+    hover(app) => highlight(app);
+    drag(app) => move(app);
+    if(dockHover) { dockExpand() => showApps(); }
+}
+screen = "inicial"; frame++ -> renderDock();
+appsLoop -> appSelect("Arquivos") => highlight++;
+appsLoop -> appSelect("Navegador") => highlight++;
+appsLoop -> appSelect("Email") => highlight++;
+appsLoop -> appSelect("Música") => highlight++;
+appsLoop -> appSelect("Vídeos") => highlight++;
+appsLoop -> appSelect("Paint") => highlight++;
+appsLoop -> appSelect("Calendário") => highlight++;
+appsLoop -> appSelect("Notas") => highlight++;
+appsLoop -> appSelect("Config") => highlight++;
+dockLoop -> select("Home") => highlightDock++;
+dockLoop -> select("Arquivos") => highlightDock++;
+dockLoop -> select("Navegador") => highlightDock++;
+dockLoop -> select("Config") => highlightDock++;
+while(screen=="inicial") { frame++ -> drawApps(); }
+while(screen=="inicial") { frame++ -> drawDock(); }
+frameLoop -> appHover("Arquivos") => showTooltip++;
+frameLoop -> appHover("Navegador") => showTooltip++;
+frameLoop -> appHover("Email") => showTooltip++;
+frameLoop -> appHover("Música") => showTooltip++;
+frameLoop -> appHover("Vídeos") => showTooltip++;
+frameLoop -> appHover("Paint") => showTooltip++;
+frameLoop -> appHover("Calendário") => showTooltip++;
+frameLoop -> appHover("Notas") => showTooltip++;
+frameLoop -> appHover("Config") => showTooltip++;
+dockHover -> appHover("Home") => expandDock++;
+dockHover -> appHover("Arquivos") => expandDock++;
+dockHover -> appHover("Navegador") => expandDock++;
+dockHover -> appHover("Config") => expandDock++;
+click("Arquivos") => openApp("Arquivos"); frame++ -> renderDock();
+click("Navegador") => openApp("Navegador"); frame++ -> renderDock();
+click("Email") => openApp("Email"); frame++ -> renderDock();
+click("Música") => openApp("Música"); frame++ -> renderDock();
+click("Vídeos") => openApp("Vídeos"); frame++ -> renderDock();
+click("Paint") => openApp("Paint"); frame++ -> renderDock();
+click("Calendário") => openApp("Calendário"); frame++ -> renderDock();
+click("Notas") => openApp("Notas"); frame++ -> renderDock();
+click("Config") => openApp("Config"); frame++ -> renderDock();
+while(frame<120) { drawScreen() -> updateDock(); }
+frame++ -> drawApps(); frame++ -> drawDock();
+appsLoop -> appSelect("Arquivos") => highlight++;
+appsLoop -> appSelect("Navegador") => highlight++;
+appsLoop -> appSelect("Email") => highlight++;
+appsLoop -> appSelect("Música") => highlight++;
+appsLoop -> appSelect("Vídeos") => highlight++;
+appsLoop -> appSelect("Paint") => highlight++;
+appsLoop -> appSelect("Calendário") => highlight++;
+appsLoop -> appSelect("Notas") => highlight++;
+appsLoop -> appSelect("Config") => highlight++;
+dockLoop -> select("Home") => highlightDock++;
+dockLoop -> select("Arquivos") => highlightDock++;
+dockLoop -> select("Navegador") => highlightDock++;
+dockLoop -> select("Config") => highlightDock++;
+while(screen=="inicial") { frame++ -> drawApps(); }
+while(screen=="inicial") { frame++ -> drawDock(); }
+frameLoop -> appHover("Arquivos") => showTooltip++;
+frameLoop -> appHover("Navegador") => showTooltip++;
+frameLoop -> appHover("Email") => showTooltip++;
+frameLoop -> appHover("Música") => showTooltip++;
+frameLoop -> appHover("Vídeos") => showTooltip++;
+frameLoop -> appHover("Paint") => showTooltip++;
+frameLoop -> appHover("Calendário") => showTooltip++;
+frameLoop -> appHover("Notas") => showTooltip++;
+frameLoop -> appHover("Config") => showTooltip++;
+dockHover -> appHover("Home") => expandDock++;
+dockHover -> appHover("Arquivos") => expandDock++;
+dockHover -> appHover("Navegador") => expandDock++;
+dockHover -> appHover("Config") => expandDock++;
+click("Arquivos") => openApp("Arquivos"); frame++ -> renderDock();
+click("Navegador") => openApp("Navegador"); frame++ -> renderDock();
+click("Email") => openApp("Email"); frame++ -> renderDock();
+click("Música") => openApp("Música"); frame++ -> renderDock();
+click("Vídeos") => openApp("Vídeos"); frame++ -> renderDock();
+click("Paint") => openApp("Paint"); frame++ -> renderDock();
+click("Calendário") => openApp("Calendário"); frame++ -> renderDock();
+click("Notas") => openApp("Notas"); frame++ -> renderDock();
+click("Config") => openApp("Config"); frame++ -> renderDock();
+while(frame<120) { drawScreen() -> updateDock(); }
+frame++ -> drawApps(); frame++ -> drawDock();
+appsLoop -> appSelect("Arquivos") => highlight++;
+appsLoop -> appSelect("Navegador") => highlight++;
+appsLoop -> appSelect("Email") => highlight++;
+appsLoop -> appSelect("Música") => highlight++;
+appsLoop -> appSelect("Vídeos") => highlight++;
+appsLoop -> appSelect("Paint") => highlight++;
+appsLoop -> appSelect("Calendário") => highlight++;
+appsLoop -> appSelect("Notas") => highlight++;
+appsLoop -> appSelect("Config") => highlight++;
+dockLoop -> select("Home") => highlightDock++;
+dockLoop -> select("Arquivos") => highlightDock++;
+dockLoop -> select("Navegador") => highlightDock++;
+dockLoop -> select("Config") => highlightDock++;
+while(screen=="inicial") { frame++ -> drawApps(); }
+while(screen=="inicial") { frame++ -> drawDock(); }
+frameLoop -> appHover("Arquivos") => showTooltip++;
+frameLoop -> appHover("Navegador") => showTooltip++;
+frameLoop -> appHover("Email") => showTooltip++;
+frameLoop -> appHover("Música") => showTooltip++;
+frameLoop -> appHover("Vídeos") => showTooltip++;
+frameLoop -> appHover("Paint") => showTooltip++;
+frameLoop -> appHover("Calendário") => showTooltip++;
+frameLoop -> appHover("Notas") => showTooltip++;
+frameLoop -> appHover("Config") => showTooltip++;
+dockHover -> appHover("Home") => expandDock++;
+dockHover -> appHover("Arquivos") => expandDock++;
+dockHover -> appHover("Navegador") => expandDock++;
+dockHover -> appHover("Config") => expandDock++;
+click("Arquivos") => openApp("Arquivos"); frame++ -> renderDock();
+click("Navegador") => openApp("Navegador"); frame++ -> renderDock();
+click("Email") => openApp("Email"); frame++ -> renderDock();
+click("Música") => openApp("Música"); frame++ -> renderDock();
+click("Vídeos") => openApp("Vídeos"); frame++ -> renderDock();
+click("Paint") => openApp("Paint"); frame++ -> renderDock();
+click("Calendário") => openApp("Calendário"); frame++ -> renderDock();
+click("Notas") => openApp("Notas"); frame++ -> renderDock();
+click("Config") => openApp("Config"); frame++ -> renderDock();
+while(frame<120) { drawScreen() -> updateDock(); }
