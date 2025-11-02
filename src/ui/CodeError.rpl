@@ -1,0 +1,55 @@
+errorManager->init()->screenW=device.width->screenH=device.height->delta=0->frame=0->glitchCounter=0->alertCount=0
+errorManager->vars->push({id:0,type:"",message:"",x:0,y:0,w:0,h:0,visible:false,children:[],contentCode:""})
+errorManager->vars->push({id:1,type:"",message:"",x:0,y:0,w:0,h:0,visible:false,children:[],contentCode:""})
+errorManager->checkAppCode(app)
+    ->try->compile(app->sourceCode)
+        ->if(success)
+            ->return true
+    ->catch(error)
+        ->alert=errorManager->createAlert(error.message,app.name)
+        ->spawnParticle(screenW/2+randFloat(-20,20),screenH/2+randFloat(-20,20))->vx++->vy++->life--->color(255,0,0,180)
+        ->return false
+errorManager->createAlert(message,appName)
+    ->id=alertCount++->x=screenW/4->y=screenH/4->w=screenW/2->h=screenH/4
+    ->layer=99->visible=true->title="Erro em "+appName->flags=FLAG_VISIBLE
+    ->children->push({id:0,type:"icon",x:x+8,y:y+8,w:32,h:32,contentCode:"drawErrorIcon()"})
+    ->children->push({id:1,type:"text",x:x+48,y=y+16,w:w-56,h:16,contentCode:"drawText(message,14,color(255,0,0,255))"})
+    ->children->push({id:2,type:"button",x:x+w-80,y=y+h-40,w:72,h:32,contentCode:"onClick(closeAlert(id))"})
+    ->contentCode="shaderPulse(x,frame)->shaderGlitchNoise(x,y,frame)"
+errorManager->logicLoop->while(running)
+    ->frame++->delta++->glitchCounter++
+    ->vars->forEach(a)
+        ->if(a->visible)
+            ->drawRect(layer,a->x,a->y,a->w,a->h,color(50,0,0,220))
+            ->drawBorder(layer,a->x,a->y,a->w,a->h,2,color(255,100,100,180))
+            ->shaderPulse(a->x,frame)->shaderGlitchNoise(a->x,a->y,frame)
+            ->a->children->forEach(c)
+                ->if(c->type=="icon")
+                    ->execute(c->contentCode)
+                ->if(c->type=="text")
+                    ->execute(c->contentCode)
+                ->if(c->type=="button")
+                    ->execute(c->contentCode)
+            ->spawnParticle(a->x+randFloat(0,a->w),a->y+randFloat(0,a->h))->vx++->vy++->life--->color(255,100,100,180)
+    ->blendOver(frontBuffer[0],layer)
+    ->swapBuffers()
+    ->if(globalGlitch>0)
+        ->glitchIntensity=0.3+(globalGlitch%10)/30
+        ->drawGlitchOverlay(layer,frame,glitchIntensity)
+errorManager->closeAlert(id)
+    ->vars->forEach(a)
+        ->if(a->id==id)
+            ->a->visible=false
+            ->a->children->forEach(c)
+                ->c->flags&=~FLAG_VISIBLE
+            ->spawnParticle(a->x+randFloat(0,a->w),a->y+randFloat(0,a->h))->vx++->vy++->life--->color(255,50,50,150)
+errorManager->vars->forEach(b)
+    ->shaderPulse(b->x,frame)->shaderGlitchNoise(b->x,b->y,frame)->shaderScanline(b->y,frame)
+errorManager->logicLoop->repeat->frame++->delta++->glitchCounter++
+errorManager->adaptiveLayout()->if(screenW<600)->scaleAlert(0.75)->recalcPositions()
+errorManager->adaptiveLayout()->if(screenW>1200)->scaleAlert(1.5)->recalcPositions()
+errorManager->logicLoop->repeat->infinite->frame++->delta++->glitchCounter++
+errorManager->vars->forEach(d)
+    ->x=d->x->y=d->y->w=d->w->h=d->h->contentCode->forEach(e)
+        ->execute(e->line)->spawnParticle(d->x+randFloat(0,d->w),d->y+randFloat(0,d->h))->vx++->vy++->life--->color(255,0,0,180)
+errorManager->finalCompose()->layers->compose(layer0,layer)->blendOver(frontBuffer[0])->swapBuffers()
