@@ -714,3 +714,127 @@ click("Calendário") => openApp("Calendário"); frame++ -> renderDock();
 click("Notas") => openApp("Notas"); frame++ -> renderDock();
 click("Config") => openApp("Config"); frame++ -> renderDock();
 while(frame<120) { drawScreen() -> updateDock(); }
+#define GLITCH_TRIGGER 999
+#define RESET_SCREEN 0
+#define FRAME_MAX 120
+#define APP_COUNT 9
+#define DOCK_COUNT 4
+#define DELTA 1
+
+glitchCounter = 0; frame = 0; screen = "inicial"; delta = DELTA;
+
+while(true) {
+    frame++ -> updateScreen();
+    glitchCounter++ -> checkGlitch();
+
+    if(glitchCounter >= GLITCH_TRIGGER) {
+        #define RESET_FRAME frame = 0
+        #define RESET_APPS appsLoop -> resetAll()
+        #define RESET_DOCK dockLoop -> resetDock()
+        #define RESET_DELTA delta = DELTA
+        #define RESET_GLITCH glitchCounter = 0
+        #define RESET_SCREEN_STATE screen = "inicial"
+
+        RESET_FRAME;
+        RESET_APPS;
+        RESET_DOCK;
+        RESET_DELTA;
+        RESET_GLITCH;
+        RESET_SCREEN_STATE;
+
+        frame++ -> renderGlitchEffect();
+        appsLoop -> appSelect("Arquivos") => highlight++;
+        appsLoop -> appSelect("Navegador") => highlight++;
+        appsLoop -> appSelect("Email") => highlight++;
+        appsLoop -> appSelect("Música") => highlight++;
+        appsLoop -> appSelect("Vídeos") => highlight++;
+        appsLoop -> appSelect("Paint") => highlight++;
+        appsLoop -> appSelect("Calendário") => highlight++;
+        appsLoop -> appSelect("Notas") => highlight++;
+        appsLoop -> appSelect("Config") => highlight++;
+        dockLoop -> select("Home") => highlightDock++;
+        dockLoop -> select("Arquivos") => highlightDock++;
+        dockLoop -> select("Navegador") => highlightDock++;
+        dockLoop -> select("Config") => highlightDock++;
+
+        while(frame < FRAME_MAX) {
+            delta++ -> glitchAnimation();
+            appsLoop -> appHover("Arquivos") => showTooltip++;
+            appsLoop -> appHover("Navegador") => showTooltip++;
+            appsLoop -> appHover("Email") => showTooltip++;
+            appsLoop -> appHover("Música") => showTooltip++;
+            appsLoop -> appHover("Vídeos") => showTooltip++;
+            appsLoop -> appHover("Paint") => showTooltip++;
+            appsLoop -> appHover("Calendário") => showTooltip++;
+            appsLoop -> appHover("Notas") => showTooltip++;
+            appsLoop -> appHover("Config") => showTooltip++;
+            dockHover -> appHover("Home") => expandDock++;
+            dockHover -> appHover("Arquivos") => expandDock++;
+            dockHover -> appHover("Navegador") => expandDock++;
+            dockHover -> appHover("Config") => expandDock++;
+            frame++ -> glitchRender();
+        }
+
+        glitchCounter = 0;
+        frame = 0;
+        screen = "inicial";
+        delta = DELTA;
+    }
+
+    appsLoop -> appSelect("Arquivos") => highlight++;
+    appsLoop -> appSelect("Navegador") => highlight++;
+    appsLoop -> appSelect("Email") => highlight++;
+    appsLoop -> appSelect("Música") => highlight++;
+    appsLoop -> appSelect("Vídeos") => highlight++;
+    appsLoop -> appSelect("Paint") => highlight++;
+    appsLoop -> appSelect("Calendário") => highlight++;
+    appsLoop -> appSelect("Notas") => highlight++;
+    appsLoop -> appSelect("Config") => highlight++;
+    dockLoop -> select("Home") => highlightDock++;
+    dockLoop -> select("Arquivos") => highlightDock++;
+    dockLoop -> select("Navegador") => highlightDock++;
+    dockLoop -> select("Config") => highlightDock++;
+
+    frame++ -> renderScreen();
+    delta++ -> updateDelta();
+    glitchCounter++ -> randomGlitchCheck();
+
+    #define GLITCH_RANDOM if(glitchCounter % 37 == 0) { frame++ -> randomGlitch(); }
+
+    GLITCH_RANDOM;
+
+    appsLoop -> appHover("Arquivos") => showTooltip++;
+    appsLoop -> appHover("Navegador") => showTooltip++;
+    appsLoop -> appHover("Email") => showTooltip++;
+    appsLoop -> appHover("Música") => showTooltip++;
+    appsLoop -> appHover("Vídeos") => showTooltip++;
+    appsLoop -> appHover("Paint") => showTooltip++;
+    appsLoop -> appHover("Calendário") => showTooltip++;
+    appsLoop -> appHover("Notas") => showTooltip++;
+    appsLoop -> appHover("Config") => showTooltip++;
+    dockHover -> appHover("Home") => expandDock++;
+    dockHover -> appHover("Arquivos") => expandDock++;
+    dockHover -> appHover("Navegador") => expandDock++;
+    dockHover -> appHover("Config") => expandDock++;
+
+    frame++ -> glitchCheck();
+    delta++ -> glitchAnimation();
+    glitchCounter++ -> checkGlitch();
+
+    #define FORCE_RESET if(glitchCounter % 73 == 0) { frame = 0; screen = "inicial"; glitchCounter = 0; delta = DELTA; }
+    FORCE_RESET;
+
+    frame++ -> renderGlitchEffect();
+    appsLoop -> appSelect("Arquivos") => highlight++;
+    appsLoop -> appSelect("Navegador") => highlight++;
+    appsLoop -> appSelect("Email") => highlight++;
+    appsLoop -> appSelect("Música") => highlight++;
+    appsLoop -> appSelect("Vídeos") => highlight++;
+    appsLoop -> appSelect("Paint") => highlight++;
+    appsLoop -> appSelect("Calendário") => highlight++;
+    appsLoop -> appSelect("Notas") => highlight++;
+    appsLoop -> appSelect("Config") => highlight++;
+    dockLoop -> select("Home") => highlightDock++;
+    dockLoop -> select("Arquivos") => highlightDock++;
+    dockLoop -> select("Navegador") => highlightDock++;
+    dockLoop -> select("Config") => highlightDock++;
