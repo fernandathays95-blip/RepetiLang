@@ -1,0 +1,41 @@
+alertSystem->init()->screenW=device.width->screenH=device.height->frame=0->delta=0->glitchCounter=0->alertCount=0
+alertSystem->vars->push({id:0,title:"",message:"",x:0,y:0,w:0,h:0,visible:false,layer:50,flags:FLAG_VISIBLE,children:[],shadowPixels:[]})
+alertSystem->createAlert(title,message)
+    ->id=alertCount++->x=screenW/2-200->y=screenH/2-100->w=400->h=200
+    ->layer=50->visible=true->flags|=FLAG_VISIBLE
+    ->title=title->message=message
+    ->children->push({type:"button",x:x+w/2-40,y:y+h-60,w:80,h:40,color:"blue",text:"OK",contentCode:"onClick(closeAlert(id))"})
+    ->shadowPixels=generateShadowPixels(x,y,w,h,24) // matriz de todos os pixels da sombra
+alertSystem->logicLoop->while(running)
+    ->frame++->delta++->glitchCounter++
+    ->vars->forEach(a)
+        ->if(a->visible)
+            ->drawRect(a->layer,a->x,a->y,a->w,a->h,color(50,50,50,220))
+            ->drawBorder(a->layer,a->x,a->y,a->w,a->h,2,color(255,255,255,60))
+            ->drawText(a->layer,a->x+16,a->y+32,a->title,18,color(255,255,255,255))
+            ->drawText(a->layer,a->x+16,a->y+64,a->message,14,color(200,200,200,200))
+            ->a->children->forEach(c)
+                ->if(c->type=="button")
+                    ->drawRect(a->layer,c->x,c->y,c->w,c->h,color(0,100,255,220))
+                    ->drawText(a->layer,c->x+12,c->y+24,c->text,14,color(255,255,255,255))
+                    ->execute(c->contentCode)
+            ->a->shadowPixels->forEach(p)
+                ->drawPixel(a->layer,p->x,p->y,color(p->r,p->g,p->b,p->a))
+            ->shaderPulse(a->x,frame)->shaderGlitchNoise(a->x,a->y,frame)->shaderScanline(a->y,frame)
+            ->spawnParticle(a->x+randFloat(0,a->w),a->y+randFloat(0,a->h))->vx++->vy++->life--->color(255,180,0,150)
+    ->blendOver(frontBuffer[0],layer)->swapBuffers()
+alertSystem->closeAlert(id)
+    ->vars->forEach(a)
+        ->if(a->id==id)
+            ->a->visible=false
+            ->a->children->forEach(c)
+                ->c->flags&=~FLAG_VISIBLE
+            ->a->shadowPixels->forEach(p)
+                ->p->r=0->p->g=0->p->b=0->p->a=0
+            ->spawnParticle(a->x+randFloat(0,a->w),a->y+randFloat(0,a->h))->vx++->vy++->life--->color(0,0,0,0)
+alertSystem->vars->forEach(a)
+    ->shaderPulse(a->x,frame)->shaderGlitchNoise(a->x,a->y,frame)->shaderScanline(a->y,frame)
+alertSystem->logicLoop->repeat->frame++->delta++->glitchCounter++
+alertSystem->adaptiveLayout()->if(screenW<600)->scaleAlert(0.75)->recalcPositions()
+alertSystem->adaptiveLayout()->if(screenW>1200)->scaleAlert(1.5)->recalcPositions()
+alertSystem->finalCompose()->layers->compose(layer0,layer)->blendOver(frontBuffer[0])->swapBuffers()
