@@ -1,4 +1,36 @@
-SET DISPLAY "NO BOOT NO SIGNAL"
-Input{
-  MOV,INPUT*='GO'="INSTALL"
-}
+installer->init()->screenW=device.width->screenH=device.height->delta=0->frame=0->glitchCounter=0->installState="idle"->filesLoaded=0
+installer->systemFiles->push("/bin")->push("/usr")->push("/etc")->push("/home")->push("/lib")->push("/var")->push("/tmp")
+installer->systemFiles->push("/opt")->push("/dev")->push("/proc")->push("/sys")->push("/boot")->push("/sbin")
+installer->vars->push({currentFile:"",progress:0,layer:10,flags:FLAG_VISIBLE,contentCode:""})
+installer->inputLoop->while(running)
+    ->if(userInput=="install")
+        ->installState="confirmPrompt"
+        ->drawText(layer,"confirm? [Y/n]",screenW/2-60,screenH/2,color(255,255,255,200))
+    ->if(installState=="confirmPrompt")
+        ->if(userInput=="Y" || userInput=="y")
+            ->installState="installing"
+            ->spawnParticle(screenW/2+randFloat(-20,20),screenH/2+randFloat(-20,20))->vx++->vy++->life--->color(100,255,100,180)
+        ->else
+            ->installState="idle"
+            ->drawText(layer,"Install cancelled",screenW/2-80,screenH/2,color(255,100,100,200))
+installer->logicLoop->while(installState=="installing")
+    ->frame++->delta++->glitchCounter++
+    ->systemFiles->forEach(f)
+        ->currentFile=f->vars[0]->currentFile=f
+        ->vars[0]->contentCode="drawText(currentFile,screenW/2-100,screenH/2+progress*16,color(180,255,180,200))"
+        ->execute(vars[0]->contentCode)
+        ->progress++
+        ->spawnParticle(screenW/2+randFloat(-50,50),screenH/2+progress*16+randFloat(-5,5))->vx++->vy++->life--->color(180,255,180,180)
+        ->loadFile(f)->layer=10->flags|=FLAG_VISIBLE
+    ->if(progress>=systemFiles.length)
+        ->installState="completed"
+        ->drawText(layer,"System loaded successfully",screenW/2-120,screenH/2+progress*16,color(0,255,0,220))
+installer->logicLoop->repeat->frame++->delta++->glitchCounter++
+installer->adaptiveLayout()->if(screenW<600)->scaleInstall(0.75)->recalcPositions()
+installer->adaptiveLayout()->if(screenW>1200)->scaleInstall(1.5)->recalcPositions()
+installer->vars->forEach(v)
+    ->shaderPulse(screenW/2,frame)->shaderGlitchNoise(screenW/2,screenH/2,frame)->shaderScanline(screenH/2,frame)
+installer->layers->compose(layer0,layer)->blendOver(frontBuffer[0])->swapBuffers()
+installer->systemFiles->forEach(f)
+    ->spawnParticle(screenW/2+randFloat(-100,100),screenH/2+randFloat(-50,50))->vx++->vy++->life--->color(100,255,100,150)
+installer->logicLoop->repeat->infinite->frame++->delta++->glitchCounter++
