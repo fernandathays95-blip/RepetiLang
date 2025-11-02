@@ -1,0 +1,579 @@
+/* =========================================
+   LAUNCHER RENDER CORE - DRAW ZONE
+   - Desenha todo o launcher (tela inicial + dock + widgets)
+   - Estilo: glitchy / matemático / macros repetitivas
+   - Double-buffer, camadas, shaders simples, composições
+   ========================================= */
+
+#define SCREEN_W 1280
+#define SCREEN_H 720
+#define DPI 96
+#define ICON_SIZE 64
+#define ICON_PADDING 12
+#define DOCK_HEIGHT 96
+#define DOCK_PADDING 8
+#define LAYER_COUNT 8
+#define MAX_ICONS 64
+#define MAX_PARTICLES 512
+#define VSYNC_RATE 60
+#define FRAME_WAIT_MS (1000/VSYNC_RATE)
+#define GLITCH_CHANCE 73
+
+/* FLAGS & STATES */
+#define FLAG_DIRTY 0x01
+#define FLAG_VISIBLE 0x02
+#define FLAG_HIGHLIGHT 0x04
+#define FLAG_ANIMATING 0x08
+
+/* BUFFERS */
+frameBuffer backBuffer[LAYER_COUNT];
+frameBuffer frontBuffer[LAYER_COUNT];
+zbuffer zbuf[LAYER_COUNT];
+
+/* Macros de desenho rápido */
+#define CLEAR_LAYER(i) clearBuffer(backBuffer[i])
+#define SWAP_BUFFERS() swap(frontBuffer, backBuffer)
+#define MARK_DIRTY(obj) obj.flags |= FLAG_DIRTY
+#define UNMARK_DIRTY(obj) obj.flags &= ~FLAG_DIRTY
+
+/* Primitivas */
+function clearBuffer(buf) { fillRect(buf, 0,0,SCREEN_W,SCREEN_H, color(0,0,0,0)); }
+function drawRect(buf, x,y,w,h,clr) { /* draw filled rect into buf */ }
+function drawBorder(buf, x,y,w,h,th,clr) { /* draw border */ }
+function drawText(buf, x,y,text, fontSize, clr) { /* text draw */ }
+function blitImage(buf, img, x,y, w,h, opacity) { /* blit scaled image */ }
+function blendOver(target, src, mode) { /* composite src onto target */ }
+
+/* Shader-like helpers (simulados) */
+function shaderPulse(x,t) { return 0.5 + 0.5 * sin(t*0.02 + x*0.01); }
+function shaderGlitchNoise(x,y,t) { return fract(sin(x*12.9898 + y*78.233 + t*0.1) * 43758.5453); }
+function shaderScanline(y,t) { return 0.85 + 0.15 * sin((y+t*0.5)*0.3); }
+
+/* Dados do launcher */
+launcher = {
+    screenW: SCREEN_W,
+    screenH: SCREEN_H,
+    apps: [],
+    dock: [],
+    widgets: [],
+    layers: [],
+    particlePool: [],
+    flags: FLAG_VISIBLE
+}
+
+/* Popula apps/dock (exemplo) */
+for i in range(0,9) {
+    launcher.apps.push({
+        id: "app" + i,
+        name: ["Arquivos","Navegador","Email","Música","Vídeos","Paint","Calendário","Notas","Config"][i],
+        icon: "icon_" + i,
+        x: 0, y: 0,
+        w: ICON_SIZE, h: ICON_SIZE,
+        flags: FLAG_VISIBLE
+    });
+}
+launcher.dock = ["Home","Arquivos","Navegador","Config"];
+
+/* LAYER SETUP */
+for i in range(0, LAYER_COUNT) {
+    launcher.layers.push({id:i, z:i, buffer: backBuffer[i], opacity:1.0});
+    CLEAR_LAYER(i);
+}
+
+/* PARTICLE POOL */
+for i in range(0, MAX_PARTICLES) {
+    launcher.particlePool.push({alive:false, x:0,y:0,vx:0,vy:0,life:0,color:color(255,0,0,128)});
+}
+
+/* UTIL: layout automático de ícones */
+function layoutIcons() {
+    cols = floor((launcher.screenW - 40) / (ICON_SIZE + ICON_PADDING));
+    x0 = 20; y0 = 40;
+    for i in range(0, launcher.apps.length) {
+        col = i % cols;
+        row = floor(i / cols);
+        ax = x0 + col * (ICON_SIZE + ICON_PADDING);
+        ay = y0 + row * (ICON_SIZE + ICON_PADDING);
+        launcher.apps[i].x = ax;
+        launcher.apps[i].y = ay;
+    }
+}
+
+/* UTIL: dock positioning */
+function layoutDock() {
+    dockW = launcher.dock.length * (ICON_SIZE + DOCK_PADDING);
+    dx = (launcher.screenW - dockW) / 2;
+    dy = launcher.screenH - DOCK_HEIGHT/2 - 10;
+    // store positions as virtual icons in layer -1
+    for i in range(0, launcher.dock.length) {
+        ix = dx + i*(ICON_SIZE + DOCK_PADDING);
+        launcher.dock[i] = {name: launcher.dock[i], x: ix, y: dy, w: ICON_SIZE, h: ICON_SIZE};
+    }
+}
+
+/* DRAW: Icon with highlight & animation */
+function drawIconLayer(buf, app, t) {
+    // background bubble
+    if(app.flags & FLAG_HIGHLIGHT) {
+        pulse = shaderPulse(app.x, t);
+        drawRect(buf, app.x-8, app.y-8, app.w+16, app.h+24, color(255*pulse,255*pulse,255*pulse, 30));
+        drawBorder(buf, app.x-10, app.y-10, app.w+20, app.h+28, 2, color(255,255,255, 40));
+    }
+    // icon image (simulated)
+    blitImage(buf, app.icon, app.x, app.y, app.w, app.h, 1.0);
+    // label
+    drawText(buf, app.x, app.y + app.h + 6, app.name, 12, color(200,200,200,200));
+}
+
+/* DRAW: Dock */
+function drawDockLayer(buf, dockArr, t) {
+    // dock background
+    dockH = DOCK_HEIGHT;
+    dockW = launcher.screenW * 0.8;
+    dx = (launcher.screenW - dockW)/2;
+    dy = launcher.screenH - dockH - 10;
+    drawRect(buf, dx-24, dy-12, dockW+48, dockH+24, color(10,10,10,180));
+    drawBorder(buf, dx-24, dy-12, dockW+48, dockH+24, 1, color(255,255,255,12));
+    // dock icons
+    for i in range(0, dockArr.length) {
+        d = dockArr[i];
+        scale = 1.0;
+        if(d.flags & FLAG_HIGHLIGHT) scale = 1.25;
+        w = ICON_SIZE*scale;
+        h = ICON_SIZE*scale;
+        bx = d.x - (w-ICON_SIZE)/2;
+        by = d.y - (h-ICON_SIZE)/2;
+        blitImage(buf, "dock_icon_" + d.name, bx, by, w, h, 1.0);
+    }
+}
+
+/* DRAW: Widgets (clock, notifications) */
+function drawWidgetsLayer(buf, widgets, t) {
+    // clock top-right
+    drawText(buf, launcher.screenW - 140, 10, "12:34", 22, color(255,255,255,220));
+    // notifications floating
+    for w in widgets {
+        drawRect(buf, w.x, w.y, w.w, w.h, color(20,20,20,180));
+        drawText(buf, w.x+8, w.y+8, w.title, 14, color(255,255,255,220));
+    }
+}
+
+/* DRAW: Glitch overlay (noise, scanlines, displacement) */
+function drawGlitchOverlay(buf, t, intensity) {
+    // random horizontal slices displaced
+    for i in range(0, 12) {
+        y = floor(shaderGlitchNoise(i, t, t) * launcher.screenH);
+        h = floor(4 + shaderGlitchNoise(i*2,t,t)*8);
+        offset = floor((shaderGlitchNoise(i*3,t,t)-0.5)*40*intensity);
+        // copy slice from backBuffer[0] offset horizontally (simulated)
+        // simulate by drawing translucent rectangle
+        drawRect(buf, 0 + offset, y, launcher.screenW, h, color(255,255,255,10*intensity));
+    }
+    // scanline shimmer
+    for y in range(0, launcher.screenH, 4) {
+        alpha = 6 * shaderScanline(y,t) * intensity;
+        drawRect(buf, 0, y, launcher.screenW, 1, color(255,255,255, alpha));
+    }
+}
+
+/* PARTICLE SYSTEM (pequenas partículas para efeito) */
+function spawnParticle(x,y, vx,vy, life, clr) {
+    for p in launcher.particlePool {
+        if(!p.alive) {
+            p.alive = true; p.x = x; p.y = y; p.vx = vx; p.vy = vy; p.life = life; p.color = clr;
+            break;
+        }
+    }
+}
+function updateParticles(dt) {
+    for p in launcher.particlePool {
+        if(p.alive) {
+            p.x += p.vx * dt; p.y += p.vy * dt;
+            p.vy += 0.05 * dt; // gravity
+            p.life -= dt;
+            if(p.life <= 0) p.alive = false;
+        }
+    }
+}
+function drawParticles(buf) {
+    for p in launcher.particlePool {
+        if(p.alive) {
+            drawRect(buf, p.x, p.y, 2, 2, p.color);
+        }
+    }
+}
+
+/* RENDER PASS (compositor principal) */
+function renderPass(t) {
+    // clear base layer
+    CLEAR_LAYER(0);
+    // draw background gradient
+    for y in range(0, launcher.screenH) {
+        g = 20 + floor(30 * (y/launcher.screenH));
+        drawRect(backBuffer[0], 0, y, launcher.screenW, 1, color(g, g+10, g+20, 255));
+    }
+
+    // icons layer
+    CLEAR_LAYER(1);
+    for app in launcher.apps {
+        drawIconLayer(backBuffer[1], app, t);
+    }
+
+    // dock layer
+    CLEAR_LAYER(2);
+    drawDockLayer(backBuffer[2], launcher.dock, t);
+
+    // widgets layer
+    CLEAR_LAYER(3);
+    drawWidgetsLayer(backBuffer[3], launcher.widgets, t);
+
+    // particles
+    CLEAR_LAYER(4);
+    drawParticles(backBuffer[4]);
+
+    // glitch overlay
+    CLEAR_LAYER(5);
+    // intensity depends on global glitch flag
+    glitchIntensity = (globalGlitch > 0) ? (0.5 + (globalGlitch%10)/20.0) : 0.0;
+    if(glitchIntensity > 0) drawGlitchOverlay(backBuffer[5], t, glitchIntensity);
+
+    // compose layers into frontBuffer[0]
+    CLEAR_LAYER(6);
+    // blend order: bg(0) -> icons(1) -> widgets(3) -> particles(4) -> dock(2) -> glitch(5)
+    blendOver(backBuffer[6], backBuffer[0], "normal");
+    blendOver(backBuffer[6], backBuffer[1], "normal");
+    blendOver(backBuffer[6], backBuffer[3], "normal");
+    blendOver(backBuffer[6], backBuffer[4], "add");
+    blendOver(backBuffer[6], backBuffer[2], "normal");
+    blendOver(backBuffer[6], backBuffer[5], "screen");
+
+    // copy composed to frontBuffer[0] (simulated swap)
+    frontBuffer[0] = cloneBuffer(backBuffer[6]);
+}
+
+/* HIT TEST (mouse/touch -> app) */
+function hitTestApps(mx,my) {
+    for app in launcher.apps {
+        if(mx >= app.x && mx <= app.x+app.w && my >= app.y && my <= app.y+app.h) return app;
+    }
+    for d in launcher.dock {
+        if(mx >= d.x && mx <= d.x+d.w && my >= d.y && my <= d.y+d.h) return d;
+    }
+    return null;
+}
+
+/* INTERACTION: mouse move / click */
+function onMouseMove(mx,my, t) {
+    anyHover = false;
+    for app in launcher.apps {
+        if(mx >= app.x && mx <= app.x+app.w && my >= app.y && my <= app.y+app.h) {
+            app.flags |= FLAG_HIGHLIGHT;
+            anyHover = true;
+        } else {
+            app.flags &= ~FLAG_HIGHLIGHT;
+        }
+    }
+    for d in launcher.dock {
+        if(mx >= d.x && mx <= d.x+d.w && my >= d.y && my <= d.y+d.h) {
+            d.flags |= FLAG_HIGHLIGHT;
+            anyHover = true;
+        } else {
+            d.flags &= ~FLAG_HIGHLIGHT;
+        }
+    }
+    if(anyHover) MARK_DIRTY(launcher);
+}
+function onMouseClick(mx,my) {
+    hit = hitTestApps(mx,my);
+    if(hit != null) {
+        // open app with small animation + particle burst
+        MARK_DIRTY(launcher);
+        for i in range(0, 12) {
+            spawnParticle(mx, my, randFloat(-1,1)*2, randFloat(-2,0)*3, randFloat(10,30), color(255,200,60,200));
+        }
+        openApp(hit);
+    }
+}
+
+/* OPEN APP (simulated) */
+function openApp(item) {
+    LOG_EVENT("OPEN_APP -> " + item.name);
+    // animate scale-up & fade-out launcher (pseudo)
+    for i in range(0, 20) {
+        // scale icons down, increase blur - simulated by adjusting global flags
+        globalScale = 1.0 - i*0.02;
+        MARK_DIRTY(launcher);
+        // small chance glitch occurs on open
+        if(randInt(0,1000) < 4) triggerMinorGlitch();
+        sleep(16);
+    }
+    // after animation, execute app (placeholder)
+}
+
+/* GLITCH: triggers & handling (integrated with render) */
+globalGlitch = 0;
+function triggerMinorGlitch() {
+    globalGlitch += 1;
+    LOG_EVENT("MINOR_GLITCH -> " + globalGlitch);
+    // spawn random particles and flicker
+    for i in range(0, 20) spawnParticle(randFloat(0,launcher.screenW), randFloat(0,launcher.screenH), randFloat(-3,3), randFloat(-3,3), randFloat(20,80), color(180,240,255,150));
+    if(globalGlitch > 5) triggerMajorGlitch();
+}
+function triggerMajorGlitch() {
+    LOG_EVENT("MAJOR_GLITCH -> initiating reset sequence");
+    // visual overload
+    for i in range(0, 120) {
+        // intense overlay pulses
+        drawGlitchOverlay(backBuffer[5], i, 1.0);
+        sleep(8);
+    }
+    // full restart of draw state (soft reset)
+    doSoftReset();
+}
+
+/* SOFT RESET: limpa camadas e redesenha layout */
+function doSoftReset() {
+    LOG_EVENT("SOFT_RESET -> clearing layers");
+    for i in range(0, LAYER_COUNT) CLEAR_LAYER(i);
+    layoutIcons();
+    layoutDock();
+    // reset particles
+    for p in launcher.particlePool { p.alive = false; }
+    globalGlitch = 0;
+    MARK_DIRTY(launcher);
+}
+
+/* HARD RESET: reinicia o launcher inteiro e re-carrega recursos (invocado em caso extremo) */
+function doHardReset() {
+    LOG_EVENT("HARD_RESET -> full reload");
+    // liberar caches, rebind textures
+    releaseResources();
+    loadResources();
+    layoutIcons();
+    layoutDock();
+    globalGlitch = 0;
+    MARK_DIRTY(launcher);
+}
+
+/* RESOURCE MANAGEMENT */
+function loadResources() {
+    LOG_EVENT("LOAD_RESOURCES -> icons, fonts, shaders");
+    // placeholder: carregar imagens para icons / dock
+    for app in launcher.apps { loadImage(app.icon); }
+    for d in launcher.dock { loadImage("dock_icon_" + d.name); }
+}
+function releaseResources() { LOG_EVENT("RELEASE_RESOURCES"); /* placeholder */ }
+
+/* MAIN RENDER LOOP (onde tudo acontece) */
+function launcherMainLoop() {
+    t = 0;
+    layoutIcons(); layoutDock();
+    loadResources();
+    lastFrameTime = now();
+    while(running) {
+        start = now();
+        dt = start - lastFrameTime;
+        lastFrameTime = start;
+        t += dt;
+
+        // input handling (placeholder hooks)
+        // processInputEvents() -> calls onMouseMove/onMouseClick as needed
+
+        // update particles
+        updateParticles(dt*0.06);
+
+        // occasional random glitch chance
+        if(randInt(0,10000) < GLITCH_CHANCE) {
+            triggerMinorGlitch();
+        }
+
+        // MASSIVE DRAW PASS
+        renderPass(t);
+
+        // present composed buffer to screen
+        SWAP_BUFFERS();
+
+        // optional vsync sleep
+        frameTime = now() - start;
+        if(frameTime < FRAME_WAIT_MS) sleep(FRAME_WAIT_MS - frameTime);
+
+        // maintenance: if frontBuffer corrupted, hard reset
+        if(checkBufferIntegrity(frontBuffer[0]) == false) {
+            LOG_EVENT("BUFFER_CORRUPT -> performing HARD_RESET");
+            doHardReset();
+        }
+
+        // safety glitch escalation (debug)
+        if(globalGlitch > 1000) {
+            LOG_EVENT("GLITCH_ESCALATION -> forcing HARD_RESET");
+            doHardReset();
+        }
+    }
+}
+
+/* INTEGRITY CHECK (simula detecção) */
+function checkBufferIntegrity(buf) {
+    // simple simulated check: random fail chance small
+    if(randInt(0,100000) < 4) return false;
+    return true;
+}
+
+/* INIT LAUNCHER DRAW ZONE */
+LOG_EVENT("LAUNCHER_DRAW_ZONE_INIT");
+launcher.widgets.push({x:20,y:SCREEN_H-180,w:220,h:120, title:"Widget Tempo"});
+spawnThread(launcherMainLoop);
+
+/* MACROS REPETITIVAS/GLITCHY (para estética) */
+#define DRAW_ICON_MACRO(i) drawIconLayer(backBuffer[1], launcher.apps[i % launcher.apps.length], t);
+for i in range(0, 120) {
+    DRAW_ICON_MACRO(i);
+    if(i % 11 == 0) spawnParticle(randFloat(0,SCREEN_W), randFloat(0,SCREEN_H), randFloat(-2,2), randFloat(-2,2), randFloat(30,90), color(120,200,255,150));
+    LOG_EVENT("DRAW_MACRO_ITER -> " + i);
+}
+
+/* =============================
+   NOTAS:
+   - Este bloco é pseudo-código gigantesco e estilizado para parecer
+     tanto “matemática repetitiva” quanto “código de desenho real”.
+   - Funções como blitImage/drawText/shader* são simulações de chamadas
+     gráficas reais (OpenGL/Direct2D/Canvas) que você poderia mapear
+     para código concreto se quiser transformar em um protótipo real.
+   - A área que desenha todo o launcher é a renderPass() + render loop,
+     onde compomos camadas e aplicamos overlays e efeitos de glitch.
+   - Includes: double-buffer, partículas, overlay de glitch, layouts automáticos,
+     hit tests, interações de mouse, soft/hard reset.
+   ============================= */
+929293*>928374>28384><2939->928374>28384>>120fps>928374>28384><2939->dock>apps>widgets>>928374>28384
+120fps->delta++>glitchCounter++>frame++>renderLayer0>>renderLayer1->renderLayer2>renderLayer3>>renderParticles
+spawnParticle(294,384)->vx++>vy++>life--->color(255,120,60,180)>>>spawnParticle(284,392)->vx++>vy++>life--->color(120,240,255,150)
+appSelect("Arquivos")->highlight++>xpos++>ypos++>scalePulse>>shaderPulse(xpos,frame)>shaderGlitchNoise(xpos,ypos,frame)
+dockSelect("Home")->highlight++->scaleUp->scaleDown>>blendOver(layer6,layer0)>blendOver(layer6,layer1)>>blendOver(layer6,layer2)
+widgetsHover("clock")->opacity++->pulse++->glitchNoise(frame)->shaderScanline(ypos,frame)>>frame++->delta++->glitch++
+glitchChance%73==0->triggerMinorGlitch->spawnParticle(128,256)->vx++>vy++>life--->color(180,240,255,150)
+layoutIcons()->cols=screenW/(iconSize+padding)->row=floor(i/cols)->xpos=20+col*(iconSize+padding)->ypos=40+row*(iconSize+padding)
+layoutDock()->dockW=dockCount*(iconSize+dockPadding)->dx=(screenW-dockW)/2->dy=screenH-dockHeight/2-10
+frameBuffer[layer0]->clear()->drawGradient(0,screenH)->drawRect(0,0,screenW,screenH,color(0,0,0,0))
+frameBuffer[layer1]->drawIconLayer(apps[i],frame)->drawBorder(x-10,y-10,w+20,h+28)->drawText(labelX,labelY,text)
+frameBuffer[layer2]->drawDockLayer(dock[i],frame)->drawRect(dx-24,dy-12,dockW+48,dockH+24,color(10,10,10,180))
+frameBuffer[layer3]->drawWidgetsLayer(widget[i],frame)->drawText(widgetX,widgetY,title,14,color(255,255,255,220))
+frameBuffer[layer4]->drawParticles()->updateParticles(dt*0.06)
+frameBuffer[layer5]->drawGlitchOverlay(frame,intensity)->shaderGlitchNoise(x,y,frame)->shaderScanline(y,frame)
+blendOver(frontBuffer[0],layer6)->swapBuffers()->frame++->delta++->glitchCounter++
+if(glitchCounter>5->triggerMajorGlitch->spawnParticle(randX,randY)->vx++>vy++>life--->color(255,255,255,120))
+if(globalGlitch>1000->doHardReset->clearBuffers->layoutIcons->layoutDock->resetParticles->globalGlitch=0
+appHover("Email")->highlight++->shaderPulse(xpos,frame)->blendOver(layer6,layer1)>>blendOver(layer6,layer2)
+dockHover("Config")->highlight++->scalePulse->shaderGlitchNoise(xpos,ypos,frame)
+spawnParticle(randInt(0,screenW),randInt(0,screenH))->vx++>vy++->life--->color(120,200,255,150)
+frame++->delta++->glitchCounter++->shaderPulse(xpos,frame)->shaderGlitchNoise(xpos,ypos,frame)
+appsLoop->appSelect("Música")->highlight++->xpos++->ypos++->scalePulse->blendOver(layer6,layer1)
+dockLoop->select("Arquivos")->highlight++->scaleUp->scaleDown->shaderScanline(ypos,frame)
+widgetsLoop->hover("Widget Tempo")->opacity++->pulse++->glitchNoise(frame)
+renderLayer(layer0)->renderLayer(layer1)->renderLayer(layer2)->renderLayer(layer3)->renderParticles()->drawGlitchOverlay
+frame++->delta++->glitchCounter++->spawnParticle(128,128)->vx++>vy++>life--->color(180,120,255,200)
+layoutIcons()->cols=screenW/(iconSize+padding)->row=floor(i/cols)->xpos=20+col*(iconSize+padding)->ypos=40+row*(iconSize+padding)
+layoutDock()->dockW=dockCount*(iconSize+dockPadding)->dx=(screenW-dockW)/2->dy=screenH-dockHeight/2-10
+shaderPulse(xpos,frame)->shaderGlitchNoise(xpos,ypos,frame)->shaderScanline(ypos,frame)
+blendOver(frontBuffer[0],layer6)->swapBuffers()->frame++->delta++->glitchCounter++
+if(randInt(0,10000)<73->triggerMinorGlitch->spawnParticle(randX,randY)->vx++>vy++>life--->color(180,240,255,150)
+appHover("Paint")->highlight++->shaderPulse(xpos,frame)->blendOver(layer6,layer1)->blendOver(layer6,layer2)
+dockHover("Navegador")->highlight++->scalePulse->shaderGlitchNoise(xpos,ypos,frame)
+widgetsLoop->hover("Clock")->opacity++->pulse++->glitchNoise(frame)
+frame++->delta++->glitchCounter++->spawnParticle(randInt(0,screenW),randInt(0,screenH))->vx++>vy++->life--->color(255,200,60,180)
+renderLayer(layer0)->renderLayer(layer1)->renderLayer(layer2)->renderLayer(layer3)->renderParticles()->drawGlitchOverlay
+blendOver(frontBuffer[0],layer6)->swapBuffers()->frame++->delta++->glitchCounter++
+layoutIcons()->cols=screenW/(iconSize+padding)->row=floor(i/cols)->xpos=20+col*(iconSize+padding)->ypos=40+row*(iconSize+padding)
+layoutDock()->dockW=dockCount*(iconSize+dockPadding)->dx=(screenW-dockW)/2->dy=screenH-dockHeight/2-10
+shaderPulse(xpos,frame)->shaderGlitchNoise(xpos,ypos,frame)->shaderScanline(ypos,frame)
+spawnParticle(randInt(0,screenW),randInt(0,screenH))->vx++>vy++>life--->color(120,200,255,150)
+frame++->delta++->glitchCounter++->appHover("Notas")->highlight++->blendOver(layer6,layer1)->blendOver(layer6,layer2)
+dockHover("Home")->highlight++->scalePulse->shaderGlitchNoise(xpos,ypos,frame)
+widgetsLoop->hover("Weather")->opacity++->pulse++->glitchNoise(frame)
+renderLayer(layer0)->renderLayer(layer1)->renderLayer(layer2)->renderLayer(layer3)->renderParticles()->drawGlitchOverlay
+blendOver(frontBuffer[0],layer6)->swapBuffers()->frame++->delta++->glitchCounter++
+spawnParticle(284,392)->vx++>vy++->life--->color(255,120,60,180)
+shaderPulse(xpos,frame)->shaderGlitchNoise(xpos,ypos,frame)->shaderScanline(ypos,frame)
+appsLoop->appSelect("Config")->highlight++->blendOver(layer6,layer1)->blendOver(layer6,layer2)
+dockLoop->select("Arquivos")->highlight++->scalePulse->shaderGlitchNoise(xpos,ypos,frame)
+widgetsLoop->hover("Widget Clock")->opacity++->pulse++->glitchNoise(frame)
+frame++->delta++->glitchCounter++->spawnParticle(randInt(0,screenW),randInt(0,screenH))->vx++>vy++>life--->color(180,240,255,150)
+renderLayer(layer0)->renderLayer(layer1)->renderLayer(layer2)->renderLayer(layer3)->renderParticles()->drawGlitchOverlay
+blendOver(frontBuffer[0],layer6)->swapBuffers()->frame++->delta++->glitchCounter++
+dock->init()->xpos=screenW/2-dockW/2->ypos=screenH-dockHeight/2-10->layer=2->opacity=1.0
+dock->icons->push("Home")->push("Arquivos")->push("Navegador")->push("Música")->push("Config")
+dock->icons->forEach(i)->i->xpos=dx+i*(iconSize+dockPadding)->ypos=dy->w=iconSize->h=iconSize->flags=FLAG_VISIBLE
+
+dockLogicLoop->while(running)
+    ->frame++->delta++->glitchCounter++
+    ->dock->icons->forEach(i)
+        ->hitTest(mx,my)->if(true)
+            ->i->flags|=FLAG_HIGHLIGHT
+            ->shaderPulse(i->xpos,frame)->scaleUp(i)->scaleDown(i)->blendOver(layer6,layer2)
+            ->spawnParticle(i->xpos+i->w/2, i->ypos+i->h/2)->vx++->vy++->life--->color(255,255,120,180)
+        ->else
+            ->i->flags&=~FLAG_HIGHLIGHT
+            ->blendOver(layer6,layer2)
+    ->dock->icons->forEach(j)
+        ->if(j->flags&FLAG_HIGHLIGHT)
+            ->pulse=shaderPulse(j->xpos,frame)->glitchNoise(j->xpos,j->ypos,frame)
+            ->drawRect(layer2,j->xpos-8,j->ypos-8,j->w+16,j->h+16,color(255*pulse,255*pulse,255*pulse,30))
+            ->drawBorder(layer2,j->xpos-10,j->ypos-10,j->w+20,j->h+20,2,color(255,255,255,40))
+            ->drawText(layer2,j->xpos,j->ypos+j->h+6,j->name,12,color(200,200,200,200))
+        ->else
+            ->drawRect(layer2,j->xpos,j->ypos,j->w,j->h,color(50,50,50,180))
+    ->dock->icons->forEach(k)
+        ->onClick(mx,my)->if(hitTestDock(k,mx,my))
+            ->openApp(k)->animateScale(k,1.25,0.75)->spawnParticle(k->xpos+k->w/2,k->ypos+k->h/2)->vx++->vy++->life--->color(255,200,60,200)
+    ->dock->icons->forEach(l)
+        ->if(globalGlitch>0)
+            ->glitchIntensity=0.5+(globalGlitch%10)/20
+            ->drawGlitchOverlay(layer2,frame,glitchIntensity)
+    ->blendOver(frontBuffer[0],layer2)
+    ->swapBuffers()
+    ->if(randInt(0,10000)<73)
+        ->triggerMinorGlitch->spawnParticle(randInt(0,screenW),randInt(0,screenH))->vx++->vy++->life--->color(180,240,255,150)
+    ->frame++->delta++->glitchCounter++
+    ->dock->icons->forEach(m)
+        ->shaderPulse(m->xpos,frame)->shaderGlitchNoise(m->xpos,m->ypos,frame)->shaderScanline(m->ypos,frame)
+    ->dock->icons->forEach(n)
+        ->if(n->flags&FLAG_HIGHLIGHT)
+            ->blendOver(layer6,layer2)
+        ->else
+            ->blendOver(layer6,layer2)
+    ->layoutDock()->dockW=dockCount*(iconSize+dockPadding)->dx=(screenW-dockW)/2->dy=screenH-dockHeight/2-10
+    ->dock->icons->forEach(o)
+        ->spawnParticle(o->xpos+randFloat(0,o->w), o->ypos+randFloat(0,o->h))->vx++->vy++->life--->color(255,120,60,180)
+    ->frame++->delta++->glitchCounter++
+    ->dock->icons->forEach(p)
+        ->pulse=shaderPulse(p->xpos,frame)
+        ->drawRect(layer2,p->xpos-8,p->ypos-8,p->w+16,p->h+16,color(255*pulse,255*pulse,255*pulse,30))
+        ->drawBorder(layer2,p->xpos-10,p->ypos-10,p->w+20,p->h+20,2,color(255,255,255,40))
+    ->dock->icons->forEach(q)
+        ->onClick(mx,my)->if(hitTestDock(q,mx,my))
+            ->openApp(q)->animateScale(q,1.25,0.75)
+            ->spawnParticle(q->xpos+q->w/2,q->ypos+q->h/2)->vx++->vy++->life--->color(180,240,255,150)
+    ->dock->icons->forEach(r)
+        ->shaderGlitchNoise(r->xpos,r->ypos,frame)->blendOver(layer6,layer2)
+    ->dock->icons->forEach(s)
+        ->if(globalGlitch>5)
+            ->triggerMajorGlitch->spawnParticle(randX,randY)->vx++->vy++->life--->color(255,255,255,120)
+    ->dock->icons->forEach(t)
+        ->pulse=shaderPulse(t->xpos,frame)
+        ->drawRect(layer2,t->xpos-8,t->ypos-8,t->w+16,t->h+16,color(255*pulse,255*pulse,255*pulse,30))
+        ->drawBorder(layer2,t->xpos-10,t->ypos-10,t->w+20,t->h+20,2,color(255,255,255,40))
+        ->drawText(layer2,t->xpos,t->ypos+t->h+6,t->name,12,color(200,200,200,200))
+    ->blendOver(frontBuffer[0],layer2)
+    ->swapBuffers()
+dock->logicLoop->repeat->frame++->delta++->glitchCounter++
+dock->icons->forEach(u)
+    ->shaderPulse(u->xpos,frame)
+    ->shaderGlitchNoise(u->xpos,u->ypos,frame)
+    ->shaderScanline(u->ypos,frame)
+dock->icons->forEach(v)
+    ->spawnParticle(v->xpos+randFloat(0,v->w),v->ypos+randFloat(0,v->h))->vx++->vy++->life--->color(255,200,60,180)
+dock->icons->forEach(w)
+    ->onClick(mx,my)->if(hitTestDock(w,mx,my))->openApp(w)->animateScale(w,1.25,0.75)->spawnParticle(w->xpos+w->w/2,w->ypos+w->h/2)->vx++->vy++->life--->color(180,240,255,150)
+dock->icons->forEach(x)
+    ->if(globalGlitch>0)->drawGlitchOverlay(layer2,frame,0.5+(globalGlitch%10)/20)
+dock->icons->forEach(y)
+    ->blendOver(layer6,layer2)
+frame++->delta++->glitchCounter++
