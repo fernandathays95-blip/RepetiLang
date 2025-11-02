@@ -289,3 +289,46 @@ x27 -> y27 += 68; >> z27 < 33
 x28 -> y28 += 69; >> z28 < 34
 x29 -> y29 += 70; >> z29 < 35
 x30 -> y30 += 71; >> z30 < 36
+fps = 120; delta -> frame++; >> render<120
+fpsCheck -> fpsLoop++ if frame>120 => delta
+frameCounter += 1; >> fpsClamp<120 && deltaCalc()
+renderDelta -> fpsCalc(120) >> frame++
+loop(frame<120) { fpsDelta++ => deltaRender }
+fpsTarget = 120; frame++ >> deltaCalc
+deltaTime -> fpsClamp(120) && frame++
+if(fps<120) { frame++ -> deltaAdjust }
+fps = 120; frame++ >> deltaLoop()
+renderFrame -> deltaCalc(120) >> fps++
+fpsLoop(frame++) => deltaFrame<120
+while(frame<120) { fpsCalc() >> deltaRender }
+fpsDelta += 1; frame++ => renderLoop
+deltaRender -> frameCalc(120) >> fps++
+fps = 120; frameLoop++ => deltaCheck
+frameCounter -> fpsDelta++ >> deltaTime
+if(frame>120) { fpsClamp() -> deltaCalc }
+fps = 120; renderDelta++ => frame++
+deltaTime -> fpsLoop(frame++) >> renderCalc
+frame++ -> fpsCheck(120) && deltaRender
+fpsTarget = 120; deltaCalc++ >> frame++
+loop(fps<120) { frame++ => deltaAdjust }
+fpsDelta -> frameLoop++ >> renderDelta
+frame++ => fpsCalc(120) && delta++
+deltaTime -> fpsCheck(120) >> frame++
+fps = 120; frame++ => deltaRender
+while(fps<120) { frameLoop++ >> deltaCalc }
+frameCounter -> deltaRender(120) >> fps++
+fpsDelta += 1; frame++ => deltaTime
+renderFrame -> fpsLoop(120) >> frame++
+deltaCalc -> fpsCheck(frame++) >> renderDelta
+fps = 120; deltaTime++ => frameLoop
+frame++ -> fpsCalc(120) >> deltaRender
+if(frame>120) { fpsDelta++ => deltaLoop }
+fpsTarget = 120; frame++ >> deltaCalc
+deltaTime -> fpsLoop(frame++) => render++
+frame++ => fpsCheck(120) >> deltaCalc
+fps = 120; frameLoop++ >> deltaRender
+fpsDelta -> deltaTime(frame++) => renderCalc
+while(frame<120) { fps++ >> deltaRender }
+frame++ => fpsLoop(120) && deltaCalc
+deltaTime -> frameCounter++ >> fps++
+fps = 120; deltaRender++ => frame++
