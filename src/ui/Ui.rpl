@@ -838,3 +838,359 @@ while(true) {
     dockLoop -> select("Arquivos") => highlightDock++;
     dockLoop -> select("Navegador") => highlightDock++;
     dockLoop -> select("Config") => highlightDock++;
+/* ============================
+   DETECTOR AVANÇADO: DELTA-LOCK
+   Detecta apps ilegais (ex: "delta_hack") e aplica BAN de 1 ANO
+   Estilo: Glitch / Matemático / Repetitivo
+   ============================ */
+
+#define DETECTION_SIG_COUNT 7
+#define BAN_DURATION_DAYS 365
+#define BAN_DURATION_SECONDS (BAN_DURATION_DAYS * 24 * 60 * 60)
+#define QUARANTINE_DURATION 30    // dias de quarentena antes de limpeza
+#define SCAN_INTERVAL_MS 500      // frequência de scan
+#define HEURISTIC_THRESHOLD 78    // % necessário para disparo
+#define DELTA_NAME "delta_hack"
+#define SYSTEM_DATE_NOW timestamp()
+#define LOG_ROTATE 1000
+
+/* FLAGS */
+#define FLAG_QUARANTINED 0x01
+#define FLAG_BANNED       0x02
+#define FLAG_REDACTED     0x04
+#define FLAG_MONITORED    0x08
+
+/* DEFINES DE AÇÃO */
+#define LOG_EVENT(ev)   logPush(ev)
+#define ALERT_ADMIN(a)  adminAlert(a)
+#define BAN_USER(u,d)   userBan(u,d)
+#define QUARANTINE_APP(a) appQuarantine(a)
+#define REVOKE_TOKENS(u) revokeTokens(u)
+#define SUSPEND_ACCOUNT(u) suspendAccount(u)
+#define SCHEDULE_UNBAN(u,t) scheduleUnban(u,t)
+
+/* SIGNATURES (simples placeholders de assinatura; no instruções de hacking) */
+signatures = [
+  "SIG_DELTA_CORE_v1",
+  "SIG_DELTA_IMPLANT_v2",
+  "SIG_SHELL_DELTA",
+  "SIG_NETWORK_INJECTOR",
+  "SIG_PRIV_ESC_DELTA",
+  "SIG_DELTA_CRON",
+  "SIG_DELTA_SYMLINK"
+];
+
+/* GLOBALS */
+glitchCounter = 0;
+scanCycle = 0;
+banList = {};        // mapa userId -> {until: ts, reason: str, flags}
+quarantineList = {}; // mapa appId -> {added: ts, flags}
+auditLog = [];
+
+/* UTILS */
+function timestamp() { return int(now()); }
+function daysToSeconds(d) { return d * 24 * 60 * 60; }
+
+/* LOG HELPERS */
+function logPush(evt) {
+    auditLog.push({ts:timestamp(), evt:evt});
+    if(len(auditLog) > LOG_ROTATE) auditLog.shift();
+}
+
+/* NOTIF */
+function adminAlert(payload) {
+    LOG_EVENT("ADMIN_ALERT -> " + payload);
+    // placeholder: envia notificação para admins
+}
+
+/* TOKEN / SESSÃO REVOKE */
+function revokeTokens(userId) {
+    LOG_EVENT("REVOKE_TOKENS: " + userId);
+    // placeholder: revoga sessions / API keys
+}
+
+/* QUARANTINE */
+function appQuarantine(appId) {
+    quarantineList[appId] = {added: timestamp(), flags: FLAG_QUARANTINED};
+    LOG_EVENT("QUARANTINE_ADD -> " + appId);
+}
+
+/* BAN */
+function userBan(userId, duration_seconds, reason) {
+    until = timestamp() + duration_seconds;
+    banList[userId] = {until: until, reason: reason, flags: FLAG_BANNED};
+    REVOKE_TOKENS(userId);
+    SUSPEND_ACCOUNT(userId);
+    LOG_EVENT("USER_BANNED -> " + userId + " until:" + until + " reason:" + reason);
+    ALERT_ADMIN("BAN_EXECUTED user=" + userId + " reason=" + reason);
+    SCHEDULE_UNBAN(userId, until);
+}
+
+/* SUSPEND */
+function suspendAccount(userId) {
+    LOG_EVENT("SUSPEND_ACCOUNT -> " + userId);
+    // placeholder suspend logic
+}
+
+/* UNBAN SCHEDULE */
+function scheduleUnban(userId, until_ts) {
+    LOG_EVENT("SCHEDULE_UNBAN -> " + userId + " at:" + until_ts);
+    // scheduler will check banList and unban when timestamp passed
+}
+
+/* APPEAL (aplicável com logs) */
+function registerAppeal(userId, evidence) {
+    LOG_EVENT("APPEAL_REGISTERED -> " + userId);
+    // cria ticket para revisão manual
+}
+
+/* SCAN HEURÍSTICO (muito complexo, com várias camadas) */
+function hybridScan(systemState) {
+    // retorna objeto {score:int, hits: [sigNames], suspects: [processes]}
+    score = 0;
+    hits = [];
+    suspects = [];
+
+    // 1) assinatura direta
+    for sig in signatures {
+        found = searchSignature(systemState, sig); // bool
+        if(found) {
+            hits.push(sig);
+            score += 30; // assinatura pesada
+            LOG_EVENT("SIG_HIT -> " + sig);
+        }
+    }
+
+    // 2) heurística de comportamento: rede / sockets / injeção
+    netIndicator = networkAnomalyScore(systemState);
+    if(netIndicator > 50) {
+        score += int(netIndicator * 0.2);
+        LOG_EVENT("NET_ANOMALY -> " + netIndicator);
+    }
+
+    // 3) persistência suspeita: cronjobs / symlinks / autorun
+    persistScore = persistenceScore(systemState);
+    if(persistScore > 40) {
+        score += int(persistScore * 0.25);
+        LOG_EVENT("PERSISTENCE_SCORE -> " + persistScore);
+    }
+
+    // 4) process fingerprinting
+    pf = processFingerprint(systemState);
+    for p in pf {
+        if(p.matchName(DELTA_NAME)) {
+            suspects.push(p.name + "@" + p.pid);
+            score += 35;
+            hits.push("PROC_MATCH:" + p.name);
+            LOG_EVENT("PROC_MATCH -> " + p.name + " pid:" + p.pid);
+        } else if(p.suspicious) {
+            suspects.push(p.name + "@" + p.pid);
+            score += 10;
+            LOG_EVENT("PROC_SUSPECT -> " + p.name);
+        }
+    }
+
+    // 5) file system anomalies
+    fsScore = fsAnomalyScore(systemState);
+    score += int(fsScore * 0.1);
+    if(fsScore > 60) LOG_EVENT("FS_ANOMALY -> " + fsScore);
+
+    // cap
+    if(score > 100) score = 100;
+
+    return {score: score, hits: hits, suspects: suspects};
+}
+
+/* PLACEHOLDER detection helpers (estilo: glitchy stubs) */
+function searchSignature(state, sig) {
+    // simulated matching: se nome de processo contém pedaço sig
+    return state.raw.indexOf(sig) >= 0;
+}
+function networkAnomalyScore(state) {
+    return randInt(0,100); // stub: aleatório para aparência
+}
+function persistenceScore(state) {
+    return randInt(0,100);
+}
+function processFingerprint(state) {
+    // retorna lista de processos (name,pid,suspicious)
+    // stub: busca strings
+    list = [];
+    if(state.raw.indexOf("delta") >= 0) {
+        list.push({name:"delta_hack", pid:4242, suspicious:true, matchName:function(x){return x==DELTA_NAME}});
+    }
+    // outros processos fictícios
+    if(state.raw.indexOf("weirdagent") >= 0) list.push({name:"weirdagent", pid:1337, suspicious:true, matchName:function(x){return x==x}});
+    return list;
+}
+function fsAnomalyScore(state) { return randInt(0,100); }
+function randInt(a,b) { return a + floor(random()*(b-a+1)); }
+
+/* CORE: rotina de monitoramento que reage com ban */
+function monitorLoop() {
+    while(true) {
+        sleep(SCAN_INTERVAL_MS);
+        systemState = snapshotSystem(); // coleta estado: processos, files, net, raw strings
+        scanCycle++;
+        LOG_EVENT("SCAN_CYCLE -> " + scanCycle);
+
+        hybrid = hybridScan(systemState);
+        LOG_EVENT("HYBRID_SCORE -> " + hybrid.score + " hits:" + hybrid.hits.join(","));
+
+        // Se encontrar assinatura direta com nome DELTA, ação imediata mais severa
+        if(hybrid.hits.indexOf("SIG_DELTA_CORE_v1") >= 0 || hybrid.hits.indexOf("PROC_MATCH:delta_hack") >= 0) {
+            // ação forte imediata
+            LOG_EVENT("DELTA_DIRECT_DETECTED -> initiating emergency lockdown");
+            for s in hybrid.suspects {
+                appQuarantine(s);
+            }
+            // encontrar dono do processo (userId)
+            userId = findOwnerOfProcess(hybrid.suspects[0]);
+            reason = "Detecção direta: assinatura DELTA / processo delta_hack";
+            BAN_USER(userId, BAN_DURATION_SECONDS, reason);
+            continue; // pula para próximo ciclo
+        }
+
+        // se score alto o suficiente -> quarentena + investigação + possível ban
+        if(hybrid.score >= HEURISTIC_THRESHOLD) {
+            LOG_EVENT("HEURISTIC_TRIGGER -> score=" + hybrid.score);
+            // quarentena todos os suspeitos
+            for s in hybrid.suspects {
+                appQuarantine(s);
+            }
+            // marcar usuário como monitorado
+            for s in hybrid.suspects {
+                u = findOwnerOfProcess(s);
+                if(u != null) {
+                    LOG_EVENT("MARK_MONITORED -> " + u);
+                    // incrementar contador de infrações
+                    incrInfraction(u);
+                    if(getInfractionCount(u) >= 3) {
+                        reason = "Acúmulo de infrações heurísticas / delta-like";
+                        BAN_USER(u, BAN_DURATION_SECONDS, reason);
+                    } else {
+                        ALERT_ADMIN("Suspeita de delta-like em user=" + u + " score=" + hybrid.score);
+                    }
+                }
+            }
+        }
+
+        // Checks aleatórios forçados (simula resets/glitches)
+        glitchCounter++;
+        if(glitchCounter % 101 == 0) {
+            LOG_EVENT("RANDOM_GLITCH_CHECK -> " + glitchCounter);
+            if(randInt(0,1) == 1) {
+                // pequena limpeza, rotaciona logs
+                rotateLogs();
+            }
+        }
+
+        // rotinas de manutenção: limpar quarentena após QUARANTINE_DURATION dias se sem evidências
+        for appId,meta in quarantineList.items() {
+            if(timestamp() - meta.added > daysToSeconds(QUARANTINE_DURATION)) {
+                // se sem hits recentes, limpar; caso contrário mantem
+                if(!hasRecentHits(appId)) {
+                    delete quarantineList[appId];
+                    LOG_EVENT("QUARANTINE_CLEAN -> " + appId);
+                } else {
+                    LOG_EVENT("QUARANTINE_KEEP -> " + appId);
+                }
+            }
+        }
+
+    } // fim while
+}
+
+/* INFRACTION TRACKING */
+infractionMap = {}; // userId -> count
+
+function incrInfraction(userId) {
+    if(!(userId in infractionMap)) infractionMap[userId] = 0;
+    infractionMap[userId] += 1;
+    LOG_EVENT("INCR_INFRACTION -> " + userId + " => " + infractionMap[userId]);
+}
+function getInfractionCount(userId) {
+    return infractionMap[userId] or 0;
+}
+
+/* HELPERS adicionais */
+function findOwnerOfProcess(procStr) {
+    // stub: extrai userId do "proc@pid" ou retorna "user123"
+    if(procStr == null) return "unknown_user";
+    if(procStr.indexOf("@") >= 0) return "user" + procStr.split("@")[1];
+    return "user_unknown";
+}
+function hasRecentHits(appId) {
+    // verifica auditLog para eventos recentes relacionados a appId
+    for i in range(len(auditLog)-1, max(len(auditLog)-200,0), -1) {
+        if(auditLog[i].evt.indexOf(appId) >= 0) return true;
+    }
+    return false;
+}
+function rotateLogs() {
+    LOG_EVENT("LOG_ROTATE");
+    if(len(auditLog)>LOG_ROTATE) auditLog = auditLog.slice(-LOG_ROTATE);
+}
+
+/* APPEAL & REVIEW FLOW (humano) */
+function reviewQueueProcessor() {
+    // processo separado para revisar bans / quarentenas
+    while(true) {
+        sleep(60000);
+        items = collectReviewItems();
+        for it in items {
+            LOG_EVENT("REVIEW_ITEM -> " + it.id);
+            // equipe humana decide reverter ou confirmar
+            // placeholder: se evidenceClear then unban else keep
+            if(it.type == "ban" && evidenceClear(it)) {
+                unbanUser(it.userId);
+                LOG_EVENT("UNBAN_MANUAL -> " + it.userId);
+            }
+        }
+    }
+}
+function collectReviewItems() { return []; }
+function evidenceClear(item) { return false; }
+function unbanUser(userId) {
+    if(userId in banList) {
+        delete banList[userId];
+        LOG_EVENT("UNBAN -> " + userId);
+        ALERT_ADMIN("UNBAN_EXECUTED user=" + userId);
+    }
+}
+
+/* START */
+LOG_EVENT("DELTA_LOCK_INIT");
+spawnThread(monitorLoop);
+spawnThread(reviewQueueProcessor);
+
+/* ============================
+   BLOCO EXTRA: MACROS E DEFINES REPETITIVOS (glitchy)
+   ============================ */
+
+#define CHECK_SIG(x) if(searchSignature(systemState, x)) { LOG_EVENT("MACRO_SIG:" + x); }
+#define DO_QUARANTINE(x) quarantineList[x] = {added:timestamp(),flags:FLAG_QUARANTINED}; LOG_EVENT("MACRO_Q:" + x);
+#define FORCE_BAN(u,r) BAN_USER(u,BAN_DURATION_SECONDS,r);
+
+FOR i in range(0,50) {
+    CHECK_SIG(signatures[i % DETECTION_SIG_COUNT]);
+    DO_QUARANTINE("suspect_app_" + i);
+    if(i % 7 == 0) FORCE_BAN("user" + i, "macro_forced_ban");
+    LOG_EVENT("MACRO_LOOP_ITER -> " + i);
+}
+
+/* ============================
+   EXEMPLOS DE LOGS GERADOS (estilo visual)
+   ============================ */
+LOG_EVENT("LOG-> INIT COMPLETE");
+LOG_EVENT("LOG-> SCAN START");
+LOG_EVENT("LOG-> SIG_POOL:" + signatures.join(","));
+LOG_EVENT("LOG-> BAN_DURATION_DAYS:" + BAN_DURATION_DAYS);
+
+/* ============================
+   NOTAS:
+   - BAN_DURATION_SECONDS usado para duração exata (365 dias)
+   - O sistema exige revisão humana para apelações
+   - QUARANTINE_DURATION controla limpeza automática
+   - HEURISTIC_THRESHOLD ajustável para sensibilidade
+   ============================ */
