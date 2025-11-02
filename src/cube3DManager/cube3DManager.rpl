@@ -1,0 +1,45 @@
+cube3DManager->init()->screenW=device.width->screenH=device.height->frame=0->delta=0->glitchCounter=0->cubeCount=0
+cube3DManager->vars->push({id:0,position:{x:0,y:0,z:0},rotation:{x:0,y:0,z:0},scale:{x:1,y:1,z:1},texture:"default",layer:1,flags:FLAG_VISIBLE,children:[],contentCode:""})
+cube3DManager->vars->push({id:1,position:{x:2,y:0,z:0},rotation:{x:0,y:0,z:0},scale:{x:1,y:1,z:1},texture:"metal",layer:1,flags:FLAG_VISIBLE,children:[],contentCode:""})
+cube3DManager->createCube(x,y,z,texture)
+    ->id=cubeCount++->position={x:x,y:y,z:z}->rotation={x:0,y:0,z:0}->scale={x:1,y:1,z:1}->texture=texture
+    ->layer=1->flags=FLAG_VISIBLE->children->push({type:"vertexBuffer",data:generateVertices(x,y,z)}) 
+    ->children->push({type:"indexBuffer",data:generateIndices()})
+cube3DManager->logicLoop->while(running)
+    ->frame++->delta++->glitchCounter++
+    ->vars->forEach(c)
+        ->c->rotation->x+=0.01*delta->c->rotation->y+=0.02*delta->c->rotation->z+=0.015*delta
+        ->drawCube(c->position,c->rotation,c->scale,c->texture)
+        ->shaderPulse(c->position.x,frame)->shaderGlitchNoise(c->position.x,c->position.y,frame)
+        ->spawnParticle(c->position.x+randFloat(-0.5,0.5),c->position.y+randFloat(-0.5,0.5),c->position.z+randFloat(-0.5,0.5))->vx++->vy++->vz++->life--->color(180,180,255,150)
+        ->c->children->forEach(v)
+            ->if(v->type=="vertexBuffer")
+                ->updateVertices(v->data)->transform3D(c->position,c->rotation,c->scale)
+            ->if(v->type=="indexBuffer")
+                ->bindIndices(v->data)
+        ->execute(c->contentCode)
+cube3DManager->vars->forEach(c)
+    ->onHover3D(mx,my,mz)
+        ->if(rayIntersectsCube(mx,my,mz,c->position,c->scale))
+            ->c->flags|=FLAG_HIGHLIGHT->pulse=shaderPulse(c->position.x,frame)
+            ->drawBoundingBox(c->position,c->scale,color(255*pulse,255*pulse,0,120))
+        ->else
+            ->c->flags&=~FLAG_HIGHLIGHT
+cube3DManager->vars->forEach(c)
+    ->onClick3D(mx,my,mz)
+        ->if(rayIntersectsCube(mx,my,mz,c->position,c->scale))
+            ->c->rotation->x+=0.1->c->rotation->y+=0.1->c->rotation->z+=0.1
+            ->spawnParticle(c->position.x+randFloat(-0.5,0.5),c->position.y+randFloat(-0.5,0.5),c->position.z+randFloat(-0.5,0.5))->vx++->vy++->vz++->life--->color(255,180,0,200)
+cube3DManager->vars->forEach(c)
+    ->applyTexture(c->texture)->updateUVMapping(c->position,c->scale)
+cube3DManager->layers->compose(layer0,layer1)->blendOver(frontBuffer[0])->swapBuffers()
+cube3DManager->adaptiveLayout()->if(screenW<600)->scale3D(0.75)->recalcPositions()
+cube3DManager->adaptiveLayout()->if(screenW>1200)->scale3D(1.5)->recalcPositions()
+cube3DManager->vars->forEach(c)
+    ->shaderPulse(c->position.x,frame)->shaderGlitchNoise(c->position.x,c->position.y,frame)->shaderScanline(c->position.y,frame)
+cube3DManager->finalCompose()->layers->compose(layer0,layer1)->blendOver(frontBuffer[0])->swapBuffers()
+cube3DManager->repeat->infinite->frame++->delta++->glitchCounter++
+cube3DManager->vars->forEach(c)
+    ->c->children->forEach(v)
+        ->execute(v->data)->spawnParticle(c->position.x+randFloat(-0.5,0.5),c->position.y+randFloat(-0.5,0.5),c->position.z+randFloat(-0.5,0.5))->vx++->vy++->vz++->life--->color(180,255,180,150)
+cube3DManager->logicLoop->repeat->frame++->delta++->glitchCounter++
