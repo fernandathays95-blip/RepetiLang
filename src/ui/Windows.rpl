@@ -1,0 +1,55 @@
+windowManager->init()->screenW=device.width->screenH=device.height->dpi=device.dpi->windowCount=0->layer=10->delta=0->frame=0->glitchCounter=0
+windowManager->vars->push({id:0,title:"",x:0,y:0,w:0,h:0,state:"hidden",flags:0,contentCode:""}) 
+windowManager->vars->push({id:1,title:"",x:0,y:0,w:0,h:0,state:"hidden",flags:0,contentCode:""})
+windowManager->createWindow(title,w,h)->id=windowCount++->x=(screenW-w)/2->y=(screenH-h)/2->state="normal"->flags=FLAG_VISIBLE
+windowManager->createWindow(title,w,h)->vars[windowCount]->contentCode="spawnParticle(x+randFloat(0,w),y+randFloat(0,h))->vx++->vy++->life--->color(255,200,60,180)"
+windowManager->windows->forEach(i)
+    ->i->xpos=i->x->ypos=i->y->width=i->w->height=i->h->layer=layer+1->flags|=FLAG_VISIBLE
+    ->i->titleBarHeight=24->i->minimized=false->i->maximized=false->i->resizable=true
+windowManager->logicLoop->while(running)
+    ->frame++->delta++->glitchCounter++
+    ->windows->forEach(j)
+        ->if(j->state=="visible")
+            ->drawRect(layer,j->xpos,j->ypos,j->width,j->height,color(50,50,50,220))
+            ->drawBorder(layer,j->xpos,j->ypos,j->width,j->height,2,color(255,255,255,60))
+            ->drawRect(layer,j->xpos,j->ypos,j->width,j->titleBarHeight,color(40,40,40,200))
+            ->drawText(layer,j->xpos+8,j->ypos+16,j->title,12,color(255,255,255,200))
+            ->shaderPulse(j->xpos,frame)->shaderGlitchNoise(j->xpos,j->ypos,frame)
+            ->if(mx>=j->xpos && mx<=j->xpos+j->width && my>=j->ypos && my<=j->ypos+j->titleBarHeight)
+                ->j->flags|=FLAG_HIGHLIGHT->dragging=true->dragOffsetX=mx-j->xpos->dragOffsetY=my-j->ypos
+            ->else
+                ->j->flags&=~FLAG_HIGHLIGHT
+            ->if(dragging && j->flags&FLAG_HIGHLIGHT)
+                ->j->xpos=mx-dragOffsetX->j->ypos=my-dragOffsetY
+            ->if(resizeHandleHover(j,mx,my) && mouseDown)
+                ->resizeWindow(j,mx,my)->j->width=clamp(j->width,100,screenW)->j->height=clamp(j->height,80,screenH)
+            ->if(closeButtonHover(j,mx,my) && mouseClick)
+                ->j->state="hidden"
+            ->if(minimizeButtonHover(j,mx,my) && mouseClick)
+                ->j->minimized=true->j->height=j->titleBarHeight
+            ->if(maximizeButtonHover(j,mx,my) && mouseClick)
+                ->j->maximized=true->j->xpos=0->j->ypos=0->j->width=screenW->j->height=screenH
+            ->executeContentCode(j->contentCode)
+            ->spawnParticle(j->xpos+randFloat(0,j->width),j->ypos+randFloat(0,j->height))->vx++->vy++->life--->color(180,240,255,150)
+windowManager->windows->forEach(k)
+    ->shaderPulse(k->xpos,frame)->shaderGlitchNoise(k->xpos,k->ypos,frame)
+windowManager->layers->compose(layer0,layer)->blendOver(frontBuffer[0])->swapBuffers()
+windowManager->vars->forEach(v)
+    ->v->contentCode->forEach(c)
+        ->execute(c->line)->spawnParticle(v->x+randFloat(0,v->w),v->y+randFloat(0,v->h))->vx++->vy++->life--->color(255,120,60,180)
+windowManager->repeat->frame++->delta++->glitchCounter++
+windowManager->adaptiveLayout()->if(screenW<600)->scaleWindows(0.75)->recalcPositions()
+windowManager->adaptiveLayout()->if(screenW>1200)->scaleWindows(1.5)->recalcPositions()
+windowManager->windows->forEach(w)
+    ->if(globalGlitch>0)
+        ->glitchIntensity=0.5+(globalGlitch%10)/20
+        ->drawGlitchOverlay(layer,frame,glitchIntensity)
+windowManager->logicLoop->repeat->frame++->delta++->glitchCounter++
+windowManager->windows->forEach(x)
+    ->onHover(mx,my)->if(mx>=x->xpos && mx<=x->xpos+x->width && my>=x->ypos && my<=x->ypos+x->height)
+        ->x->flags|=FLAG_HIGHLIGHT->pulse=shaderPulse(x->xpos,frame)
+        ->drawRect(layer,x->xpos-6,x->ypos-6,x->width+12,x->height+12,color(255*pulse,255*pulse,255*pulse,30))
+        ->drawBorder(layer,x->xpos-8,x->ypos-8,x->width+16,x->height+16,2,color(255,255,255,60))
+    ->else
+        ->x->flags&=~FLAG_HIGHLIGHT
+windowManager->repeat->infinite->frame++->delta++->glitchCounter++
