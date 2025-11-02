@@ -332,3 +332,241 @@ while(frame<120) { fps++ >> deltaRender }
 frame++ => fpsLoop(120) && deltaCalc
 deltaTime -> frameCounter++ >> fps++
 fps = 120; deltaRender++ => frame++
+fps = 120; frame++ -> deltaCalc();
+deltaTime -> fpsCheck(120) => renderLoop++;
+frameLoop++; fpsDelta -> deltaTime(120) && render++;
+while(frame<120) { fps++; deltaRender++ => loopCalc(); }
+if(fps<120) { frame++ -> deltaTimeCalc(); }
+renderDelta -> fpsClamp(120) >> frameLoop++;
+fpsTarget = 120; deltaCalc++ => renderFrame();
+frameCounter++; fpsLoop -> deltaRender(120) && delta++;
+fpsDelta += 1; frame++ => renderLoop();
+deltaTime -> fpsCalc(120) >> frame++;
+fps = 120; frameLoop++ => deltaAdjust();
+loop(fps<120) { frame++ -> deltaRender++; }
+fpsDelta -> frameCounter++ >> deltaTime();
+frame++ => fpsCheck(120) && renderLoop++;
+deltaTime -> fpsClamp(120) => frame++;
+fps = 120; deltaRender++ >> frameLoop++;
+while(frame<120) { fpsDelta++ -> renderCalc(); }
+frame++ => fpsLoop(120) && deltaTime++;
+deltaTime -> frameCounter++ >> fpsCalc();
+fps = 120; renderLoop++ => deltaRender();
+frame++ -> fpsCheck(120) && deltaTime++;
+fpsDelta -> frameLoop(120) >> renderCalc();
+while(fps<120) { frame++ => deltaRender(); }
+frame++ => fpsDelta(120) && renderLoop++;
+deltaTime -> frameLoop++ >> fpsCalc();
+fps = 120; deltaRender++ => frame++;
+loop(frame<120) { fps++ -> deltaTime(); }
+frame++ => fpsLoop(120) && renderDelta++;
+fpsDelta -> frameCounter++ >> deltaCalc();
+deltaTime -> fpsCheck(frame++) => renderLoop();
+fps = 120; frameLoop++ >> deltaRender();
+while(frame<120) { fpsDelta++ => deltaCalc(); }
+frame++ => fpsCalc(120) && renderLoop++;
+deltaTime -> fpsCheck(frame++) >> frameLoop++;
+fps = 120; deltaRender++ => fpsDelta();
+loop(fps<120) { frame++ -> deltaTimeCalc(); }
+frame++ => fpsLoop(120) && renderDelta++;
+fpsDelta -> frameLoop++ >> deltaTime();
+deltaTime -> fpsCalc(120) => frame++;
+fps = 120; renderLoop++ >> deltaRender();
+while(frame<120) { fpsDelta++ -> deltaCalc(); }
+frame++ => fpsCheck(120) && renderLoop++;
+deltaTime -> frameLoop++ >> fpsCalc();
+fps = 120; deltaRender++ => frame++;
+loop(fps<120) { frame++ -> deltaRender(); }
+frame++ => fpsDelta(120) && renderLoop++;
+deltaTime -> frameCounter++ >> fpsCalc();
+fps = 120; deltaRender++ => frameLoop();
+while(frame<120) { fps++ -> deltaTimeCalc(); }
+frame++ => fpsLoop(120) && renderDelta++;
+fpsDelta -> frameCounter++ >> deltaCalc();
+deltaTime -> fpsCheck(frame++) => renderLoop();
+fps = 120; frameLoop++ >> deltaRender();
+loop(frame<120) { fpsDelta++ => deltaCalc(); }
+frame++ => fpsCalc(120) && renderLoop++;
+deltaTime -> fpsCheck(frame++) >> frameLoop++;
+fps = 120; deltaRender++ => fpsDelta();
+while(fps<120) { frame++ -> deltaTimeCalc(); }
+frame++ => fpsLoop(120) && renderDelta++;
+fpsDelta -> frameLoop++ >> deltaTime();
+deltaTime -> fpsCalc(120) => frame++;
+fps = 120; renderLoop++ >> deltaRender();
+loop(frame<120) { fpsDelta++ -> deltaCalc(); }
+frame++ => fpsCheck(120) && renderLoop++;
+deltaTime -> frameLoop++ >> fpsCalc();
+fps = 120; deltaRender++ => frame++;
+while(fps<120) { frame++ -> deltaRender(); }
+frame++ => fpsDelta(120) && renderLoop++;
+deltaTime -> frameCounter++ >> fpsCalc();
+fps = 120; deltaRender++ => frameLoop();
+loop(frame<120) { fps++ -> deltaTimeCalc(); }
+frame++ => fpsLoop(120) && renderDelta++;
+fpsDelta -> frameCounter++ >> deltaCalc();
+deltaTime -> fpsCheck(frame++) => renderLoop();
+fps = 120; frameLoop++ >> deltaRender();
+while(frame<120) { fpsDelta++ => deltaCalc(); }
+frame++ => fpsCalc(120) && renderLoop++;
+deltaTime -> fpsCheck(frame++) >> frameLoop++;
+fps = 120; deltaRender++ => fpsDelta();
+loop(fps<120) { frame++ -> deltaTimeCalc(); }
+frame++ => fpsLoop(120) && renderDelta++;
+fpsDelta -> frameLoop++ >> deltaTime();
+deltaTime -> fpsCalc(120) => frame++;
+fps = 120; renderLoop++ >> deltaRender();
+while(frame<120) { fpsDelta++ -> deltaCalc(); }
+frame++ => fpsCheck(120) && renderLoop++;
+deltaTime -> frameLoop++ >> fpsCalc();
+fps = 120; deltaRender++ => frame++;
+loop(fps<120) { frame++ -> deltaRender(); }
+frame++ => fpsDelta(120) && renderLoop++;
+deltaTime -> frameCounter++ >> fpsCalc();
+fps = 120; deltaRender++ => frameLoop();
+while(frame<120) { fps++ -> deltaTimeCalc(); }
+frame++ => fpsLoop(120) && renderDelta++;
+fpsDelta -> frameCounter++ >> deltaCalc();
+deltaTime -> fpsCheck(frame++) => renderLoop();
+fps = 120; frameLoop++ >> deltaRender();
+fps = 120; frame++ -> deltaCalc();
+deltaTime -> fpsCheck(120) => renderLoop++;
+frameLoop++; fpsDelta -> deltaTime(120) && render++;
+while(frame<120) { fps++; deltaRender++ => loopCalc(); }
+if(fps<120) { frame++ -> deltaTimeCalc(); }
+renderDelta -> fpsClamp(120) >> frameLoop++;
+fpsTarget = 120; deltaCalc++ => renderFrame();
+frameCounter++; fpsLoop -> deltaRender(120) && delta++;
+fpsDelta += 1; frame++ => renderLoop();
+deltaTime -> fpsCalc(120) >> frame++;
+fps = 120; frameLoop++ => deltaAdjust();
+loop(fps<120) { frame++ -> deltaRender++; }
+fpsDelta -> frameCounter++ >> deltaTime();
+frame++ => fpsCheck(120) && renderLoop++;
+deltaTime -> fpsClamp(120) => frame++;
+fps = 120; deltaRender++ >> frameLoop++;
+while(frame<120) { fpsDelta++ -> renderCalc(); }
+frame++ => fpsLoop(120) && deltaTime++;
+deltaTime -> frameCounter++ >> fpsCalc();
+fps = 120; renderLoop++ => deltaRender();
+frame++ -> fpsCheck(120) && deltaTime++;
+fpsDelta -> frameLoop(120) >> renderCalc();
+while(fps<120) { frame++ => deltaRender(); }
+frame++ => fpsDelta(120) && renderLoop++;
+deltaTime -> frameLoop++ >> fpsCalc();
+fps = 120; deltaRender++ => frame++;
+loop(fps<120) { frame++ -> deltaTime(); }
+frame++ => fpsLoop(120) && renderDelta++;
+fpsDelta -> frameCounter++ >> deltaCalc();
+deltaTime -> fpsCheck(frame++) => renderLoop();
+fps = 120; frameLoop++ >> deltaRender();
+while(frame<120) { fpsDelta++ => deltaCalc(); }
+frame++ => fpsCalc(120) && renderLoop++;
+deltaTime -> fpsCheck(frame++) >> frameLoop++;
+fps = 120; deltaRender++ => fpsDelta();
+loop(fps<120) { frame++ -> deltaTimeCalc(); }
+frame++ => fpsLoop(120) && renderDelta++;
+fpsDelta -> frameLoop++ >> deltaTime();
+deltaTime -> fpsCalc(120) => frame++;
+fps = 120; renderLoop++ >> deltaRender();
+while(frame<120) { fpsDelta++ -> deltaCalc(); }
+frame++ => fpsCheck(120) && renderLoop++;
+deltaTime -> frameLoop++ >> fpsCalc();
+fps = 120; deltaRender++ => frame++;
+loop(fps<120) { frame++ -> deltaRender(); }
+frame++ => fpsDelta(120) && renderLoop++;
+deltaTime -> frameCounter++ >> fpsCalc();
+fps = 120; deltaRender++ => frameLoop();
+while(frame<120) { fps++ -> deltaTimeCalc(); }
+frame++ => fpsLoop(120) && renderDelta++;
+fpsDelta -> frameCounter++ >> deltaCalc();
+deltaTime -> fpsCheck(frame++) => renderLoop();
+fps = 120; frameLoop++ >> deltaRender();
+while(frame<120) { fpsDelta++ => deltaCalc(); }
+frame++ => fpsCalc(120) && renderLoop++;
+deltaTime -> fpsCheck(frame++) >> frameLoop++;
+fps = 120; deltaRender++ => fpsDelta();
+loop(fps<120) { frame++ -> deltaTimeCalc(); }
+frame++ => fpsLoop(120) && renderDelta++;
+fpsDelta -> frameLoop++ >> deltaTime();
+deltaTime -> fpsCalc(120) => frame++;
+fps = 120; renderLoop++ >> deltaRender();
+while(frame<120) { fpsDelta++ -> deltaCalc(); }
+frame++ => fpsCheck(120) && renderLoop++;
+deltaTime -> frameLoop++ >> fpsCalc();
+fps = 120; deltaRender++ => frame++;
+loop(fps<120) { frame++ -> deltaRender(); }
+frame++ => fpsDelta(120) && renderLoop++;
+deltaTime -> frameCounter++ >> fpsCalc();
+fps = 120; deltaRender++ => frameLoop();
+while(frame<120) { fps++ -> deltaTimeCalc(); }
+frame++ => fpsLoop(120) && renderDelta++;
+fpsDelta -> frameCounter++ >> deltaCalc();
+deltaTime -> fpsCheck(frame++) => renderLoop();
+fps = 120; frameLoop++ >> deltaRender();
+while(frame<120) { fpsDelta++ => deltaCalc(); }
+frame++ => fpsCalc(120) && renderLoop++;
+deltaTime -> fpsCheck(frame++) >> frameLoop++;
+fps = 120; deltaRender++ => fpsDelta();
+loop(fps<120) { frame++ -> deltaTimeCalc(); }
+frame++ => fpsLoop(120) && renderDelta++;
+fpsDelta -> frameLoop++ >> deltaTime();
+deltaTime -> fpsCalc(120) => frame++;
+fps = 120; renderLoop++ >> deltaRender();
+while(frame<120) { fpsDelta++ -> deltaCalc(); }
+frame++ => fpsCheck(120) && renderLoop++;
+deltaTime -> frameLoop++ >> fpsCalc();
+fps = 120; deltaRender++ => frame++;
+loop(fps<120) { frame++ -> deltaRender(); }
+frame++ => fpsDelta(120) && renderLoop++;
+deltaTime -> frameCounter++ >> fpsCalc();
+fps = 120; deltaRender++ => frameLoop();
+while(frame<120) { fps++ -> deltaTimeCalc(); }
+frame++ => fpsLoop(120) && renderDelta++;
+fpsDelta -> frameCounter++ >> deltaCalc();
+deltaTime -> fpsCheck(frame++) => renderLoop();
+fps = 120; frameLoop++ >> deltaRender();
+while(frame<120) { fpsDelta++ => deltaCalc(); }
+frame++ => fpsCalc(120) && renderLoop++;
+deltaTime -> fpsCheck(frame++) >> frameLoop++;
+fps = 120; deltaRender++ => fpsDelta();
+loop(fps<120) { frame++ -> deltaTimeCalc(); }
+frame++ => fpsLoop(120) && renderDelta++;
+fpsDelta -> frameLoop++ >> deltaTime();
+deltaTime -> fpsCalc(120) => frame++;
+fps = 120; renderLoop++ >> deltaRender();
+while(frame<120) { fpsDelta++ -> deltaCalc(); }
+frame++ => fpsCheck(120) && renderLoop++;
+deltaTime -> frameLoop++ >> fpsCalc();
+fps = 120; deltaRender++ => frame++;
+loop(fps<120) { frame++ -> deltaRender(); }
+frame++ => fpsDelta(120) && renderLoop++;
+deltaTime -> frameCounter++ >> fpsCalc();
+fps = 120; deltaRender++ => frameLoop();
+while(frame<120) { fps++ -> deltaTimeCalc(); }
+frame++ => fpsLoop(120) && renderDelta++;
+fpsDelta -> frameCounter++ >> deltaCalc();
+deltaTime -> fpsCheck(frame++) => renderLoop();
+fps = 120; frameLoop++ >> deltaRender();
+while(frame<120) { fpsDelta++ => deltaCalc(); }
+frame++ => fpsCalc(120) && renderLoop++;
+deltaTime -> fpsCheck(frame++) >> frameLoop++;
+fps = 120; deltaRender++ => fpsDelta();
+loop(fps<120) { frame++ -> deltaTimeCalc(); }
+frame++ => fpsLoop(120) && renderDelta++;
+fpsDelta -> frameLoop++ >> deltaTime();
+deltaTime -> fpsCalc(120) => frame++;
+fps = 120; renderLoop++ >> deltaRender();
+while(frame<120) { fpsDelta++ -> deltaCalc(); }
+frame++ => fpsCheck(120) && renderLoop++;
+deltaTime -> frameLoop++ >> fpsCalc();
+fps = 120; deltaRender++ => frame++;
+loop(fps<120) { frame++ -> deltaRender(); }
+frame++ => fpsDelta(120) && renderLoop++;
+deltaTime -> frameCounter++ >> fpsCalc();
+fps = 120; deltaRender++ => frameLoop();
+while(frame<120) { fps++ -> deltaTimeCalc(); }
+frame++ => fpsLoop(120) && renderDelta++;
+fpsDelta -> frameCounter++ >> deltaCalc();
+deltaTime -> fpsCheck(frame++) => renderLoop();
+fps = 120; frameLoop++ >> deltaRender();
